@@ -1,0 +1,82 @@
+#ifndef VM_HEADER
+#define VM_HEADER
+
+#include <blackhv/linked_list.h>
+#include <blackhv/types.h>
+#include <linux/kvm.h>
+
+#define REAL_MODE 1
+#define PROTECTED_MODE 2
+
+#define MB_1 1048576
+
+typedef struct
+{
+    s32 kvm_fd;
+    s32 vm_fd;
+    s32 vcpu_fd;
+    struct kvm_run *kvm_run;
+    linked_list_t *memory_list;
+
+} vm_t;
+
+struct memory_mapped
+{
+    vm_t *vm;
+    u32 slot;
+    void *ptr;
+    u64 guest_phys;
+    u64 size;
+};
+
+/**
+ * Allocate an new vm_t object. vm_t object can be freed using vm_destroy
+ *
+ * @return a new vm_t object
+ */
+vm_t *vm_new(void);
+
+/**
+ * Destroy a vm_t object.
+ *
+ * @param vm the vm to free, can be NULL
+ */
+void vm_destroy(vm_t *vm);
+
+/**
+ * Initiate virtual cpu
+ *
+ * @param vm : the virtual machine structure
+ * @param code_addr : address of code executed by vm
+ * @param mode : which mode will be used by vm
+ */
+s32 vm_vcpu_set_state(vm_t *vm, u64 code_addr, u32 mode);
+
+/**
+ * Allocate the memory that will be usable by the guest
+ *
+ * @param size the size of the memory area (should be aligned on 4kb)
+ * @return 0 on error, 1 otherwise
+ */
+s32 vm_alloc_memory(vm_t *vm, u64 phys_addr, u64 size);
+
+/**
+ * Write into guest memory area
+ *
+ * @param vm vm to write to
+ * @param buffer input data
+ * @param size size in bytes
+ */
+s64 vm_memory_write(vm_t *vm, u64 dest, u8 *buffer, u64 size);
+
+/**
+ * Run the virtual memory
+ *
+ * @param vm the vm to run
+ * @return 1 on success, 0 otherwise
+ */
+s32 vm_run(vm_t *vm);
+
+s32 vm_dump_regs(vm_t *vm);
+
+#endif
