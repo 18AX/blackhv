@@ -6,16 +6,14 @@
 #define COM3 0x3E8
 #define COM4 0x2E8
 
+#include <blackhv/queue.h>
 #include <blackhv/types.h>
 #include <stddef.h>
 
 typedef struct
 {
     u16 port;
-    size_t pos;
-    size_t elements_count;
-    size_t buffer_size;
-    u8 *buffer;
+    queue_t *queue;
 } serial_t;
 
 /**
@@ -25,6 +23,6 @@ serial_t *serial_new(u16 port, size_t internal_buffer_size);
 
 void serial_destroy(serial_t *serial);
 
-ssize_t serial_read(serial_t *serial, u8 *buffer, size_t len);
+size_t serial_read(serial_t *serial, u8 *buffer, size_t len);
 
 #endif

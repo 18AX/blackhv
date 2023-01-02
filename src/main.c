@@ -1,6 +1,8 @@
+#include <blackhv/serial.h>
 #include <blackhv/vm.h>
 #include <err.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -8,6 +10,23 @@
 
 #define BUFFER_SIZE 1024
 #define START_ADDRESS 0x7c00
+
+void *worker(void *params)
+{
+    (void)params;
+
+    serial_t *serial = serial_new(COM1, 1024);
+
+    for (;;)
+    {
+        u8 chr = 0;
+
+        if (serial_read(serial, &chr, 1) != 0)
+        {
+            putchar(chr);
+        }
+    }
+}
 
 int main(int argc, const char *argv[])
 {
@@ -65,11 +84,15 @@ int main(int argc, const char *argv[])
 
     printf("Launching the VM\n");
 
+    pthread_t th;
+    pthread_create(&th, NULL, worker, NULL);
+
     if (vm_run(vm) != 1)
     {
         errx(1, "Failed to run VM\n");
     }
 
+    pthread_join(th, NULL);
     vm_destroy(vm);
 
     return 0;

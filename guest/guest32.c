@@ -1,5 +1,7 @@
 #define STACK_SIZE 16384
 
+#define COM1 0x3F8
+
 static char stack[STACK_SIZE];
 
 static void outb(unsigned short addr, unsigned char value)
@@ -14,18 +16,18 @@ __attribute__((naked, section(".boot"))) void _start(void)
                  :
                  : "r"(stack + STACK_SIZE));
 
-    outb(0xE9, 'H');
-    outb(0xE9, 'e');
-    outb(0xE9, 'l');
-    outb(0xE9, 'l');
-    outb(0xE9, 'o');
-    outb(0xE9, ' ');
-    outb(0xE9, 'W');
-    outb(0xE9, 'o');
-    outb(0xE9, 'r');
-    outb(0xE9, 'l');
-    outb(0xE9, 'd');
-    outb(0xE9, '\n');
+    outb(COM1, 'H');
+    outb(COM1, 'e');
+    outb(COM1, 'l');
+    outb(COM1, 'l');
+    outb(COM1, 'o');
+    outb(COM1, ' ');
+    outb(COM1, 'W');
+    outb(COM1, 'o');
+    outb(COM1, 'r');
+    outb(COM1, 'l');
+    outb(COM1, 'd');
+    outb(COM1, '\n');
 
     for (;;)
     {

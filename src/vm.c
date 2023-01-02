@@ -317,22 +317,12 @@ s64 vm_memory_write(vm_t *vm, u64 dest_addr, u8 *buffer, u64 size)
 
 #include <stdio.h>
 
-static void print_handler(u16 port, u8 data, void *params)
-{
-    (void)port;
-    (void)params;
-
-    printf("%c", data);
-}
-
 s32 vm_run(vm_t *vm)
 {
     if (vm == NULL || vm->kvm_run == NULL)
     {
         return 0;
     }
-
-    io_set_outb_handler(0xE9, print_handler, NULL);
 
     for (;;)
     {

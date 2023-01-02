@@ -13,6 +13,8 @@ OBJECTS=main.o \
 		vm.o \
 		linked_list.o \
 		io.o \
+		queue.o \
+		serial.o \
 
 all: $(TARGET)
 
