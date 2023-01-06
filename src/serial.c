@@ -10,7 +10,7 @@ static void write_data(serial_t *serial, u8 data)
     queue_write(serial->queue, &data, 1);
 }
 
-static void serial_handler(u16 port, u8 data, void *params)
+static void serial_outb(u16 port, u8 data, void *params)
 {
     if (params == NULL)
     {
@@ -27,6 +27,13 @@ static void serial_handler(u16 port, u8 data, void *params)
         write_data(serial, data);
         break;
     }
+}
+
+static u8 serial_inb(u16 port, void *params)
+{
+    (void)port;
+    (void)params;
+    return 'T';
 }
 
 serial_t *serial_new(u16 port, size_t internal_buffer_size)
@@ -47,7 +54,11 @@ serial_t *serial_new(u16 port, size_t internal_buffer_size)
         return NULL;
     }
 
-    io_set_outb_handler(port, serial_handler, serial);
+    struct handler handler = { .inb_handler = serial_inb,
+                               .outb_handler = serial_outb,
+                               .params = serial };
+
+    io_register_handler(port, handler);
 
     return serial;
 }
@@ -59,7 +70,7 @@ void serial_destroy(serial_t *serial)
         return;
     }
 
-    io_set_outb_handler(serial->port, NULL, NULL);
+    io_unregister_handler(serial->port);
     queue_destroy(serial->queue);
     free(serial);
 }

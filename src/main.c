@@ -87,6 +87,8 @@ int main(int argc, const char *argv[])
     pthread_t th;
     pthread_create(&th, NULL, worker, NULL);
 
+    sleep(1);
+
     if (vm_run(vm) != 1)
     {
         errx(1, "Failed to run VM\n");

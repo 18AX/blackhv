@@ -339,12 +339,22 @@ s32 vm_run(vm_t *vm)
         case KVM_EXIT_IO: {
             if (vm->kvm_run->io.direction == KVM_EXIT_IO_OUT)
             {
-                char *tmp = (char *)vm->kvm_run;
+                u8 *tmp = (u8 *)vm->kvm_run;
 
                 if (vm->kvm_run->io.size == 1)
                 {
                     u8 data = *(tmp + vm->kvm_run->io.data_offset);
                     io_handle_outb(vm->kvm_run->io.port, data);
+                }
+            }
+            else if (vm->kvm_run->io.direction == KVM_EXIT_IO_IN)
+            {
+                u8 *tmp = (u8 *)vm->kvm_run;
+
+                if (vm->kvm_run->io.size == 1)
+                {
+                    *(tmp + vm->kvm_run->io.data_offset) =
+                        io_handle_inb(vm->kvm_run->io.port);
                 }
             }
             break;

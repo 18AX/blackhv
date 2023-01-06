@@ -9,6 +9,15 @@ static void outb(unsigned short addr, unsigned char value)
     asm volatile("outb %0,%1" : : "a"(value), "d"(addr));
 }
 
+static unsigned char inb(unsigned short addr)
+{
+    unsigned char res;
+
+    asm volatile("inb %1, %0" : "=&a"(res) : "d"(addr));
+
+    return res;
+}
+
 __attribute__((naked, section(".boot"))) void _start(void)
 {
     asm volatile("mov %0,%%esp\n"
@@ -28,6 +37,7 @@ __attribute__((naked, section(".boot"))) void _start(void)
     outb(COM1, 'l');
     outb(COM1, 'd');
     outb(COM1, '\n');
+    outb(COM1, inb(COM1));
 
     for (;;)
     {
