@@ -63,7 +63,15 @@ static u8 serial_inb(u16 port, void *params)
 
         return data;
     }
-    break;
+    case LSR: {
+        u8 line_status = 0x0;
+
+        // Data ready and serial ready to receive more data
+        line_status |=
+            ((!queue_empty(serial->host_queue)) & 0x1) | (0x1 << 0x5);
+
+        return line_status;
+    }
     default:
         errx(1, "serial: register not supperted yet %u", port);
     }
@@ -102,7 +110,11 @@ serial_t *serial_new(u16 port, size_t internal_buffer_size)
                                .outb_handler = serial_outb,
                                .params = serial };
 
-    io_register_handler(port, handler);
+    // Register the handler for all the serial register
+    for (size_t i = 0; i < 8; ++i)
+    {
+        io_register_handler(port, handler);
+    }
 
     return serial;
 }
@@ -114,7 +126,12 @@ void serial_destroy(serial_t *serial)
         return;
     }
 
-    io_unregister_handler(serial->port);
+    // Unregister the handler for all the serial register
+    for (size_t i = 0; i < 8; ++i)
+    {
+        io_unregister_handler(serial->port + i);
+    }
+
     queue_destroy(serial->guest_queue);
     queue_destroy(serial->host_queue);
     free(serial);

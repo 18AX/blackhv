@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <blackhv/serial.h>
 #include <blackhv/vm.h>
 #include <err.h>
@@ -11,21 +13,37 @@
 #define BUFFER_SIZE 1024
 #define START_ADDRESS 0x7c00
 
-void *worker(void *params)
+void *worker0(void *params)
 {
     (void)params;
 
-    serial_t *serial = serial_new(COM1, 1024);
+    serial_t *serial = (serial_t *)params;
 
-    serial_write(serial, (u8 *)"TOTO", 4);
+    char *line = NULL;
+    size_t len = 0;
 
     for (;;)
     {
-        u8 chr = 0;
-
-        if (serial_read(serial, &chr, 1) != 0)
+        if (getline(&line, &len, stdin) == -1)
         {
-            putchar(chr);
+            errx(1, "getline failed");
+        }
+
+        serial_write(serial, (u8 *)line, len);
+    }
+}
+
+void *worker1(void *params)
+{
+    serial_t *serial = (serial_t *)params;
+
+    for (;;)
+    {
+        char c;
+
+        if (serial_read(serial, (u8 *)&c, 1) != 0)
+        {
+            putchar(c);
         }
     }
 }
@@ -86,8 +104,13 @@ int main(int argc, const char *argv[])
 
     printf("Launching the VM\n");
 
-    pthread_t th;
-    pthread_create(&th, NULL, worker, NULL);
+    serial_t *serial = serial_new(COM1, 1024);
+
+    pthread_t th0;
+    pthread_create(&th0, NULL, worker0, serial);
+
+    pthread_t th1;
+    pthread_create(&th1, NULL, worker1, serial);
 
     sleep(1);
 
@@ -96,7 +119,9 @@ int main(int argc, const char *argv[])
         errx(1, "Failed to run VM\n");
     }
 
-    pthread_join(th, NULL);
+    pthread_join(th0, NULL);
+    pthread_join(th1, NULL);
+
     vm_destroy(vm);
 
     return 0;

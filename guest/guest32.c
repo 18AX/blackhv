@@ -18,6 +18,40 @@ static unsigned char inb(unsigned short addr)
     return res;
 }
 
+void serial_write_char(char c)
+{
+    unsigned char status = inb(COM1 + 5);
+
+    // Wait for the serial to be ready
+    while ((status & 0x5) == 0)
+    {
+        asm volatile("pause");
+    }
+
+    outb(COM1, c);
+}
+
+void serial_write_str(char *str)
+{
+    for (int i = 0; str[i] != '\0'; ++i)
+    {
+        serial_write_char(str[i]);
+    }
+}
+
+unsigned char serial_read()
+{
+    unsigned char status = inb(COM1 + 5);
+
+    // Wait for some data to be available
+    while ((status & 0x1) == 0)
+    {
+        asm volatile("pause");
+    }
+
+    return inb(COM1);
+}
+
 __attribute__((naked, section(".boot"))) void _start(void)
 {
     asm volatile("mov %0,%%esp\n"
@@ -25,26 +59,10 @@ __attribute__((naked, section(".boot"))) void _start(void)
                  :
                  : "r"(stack + STACK_SIZE));
 
-    outb(COM1, 'H');
-    outb(COM1, 'e');
-    outb(COM1, 'l');
-    outb(COM1, 'l');
-    outb(COM1, 'o');
-    outb(COM1, ' ');
-    outb(COM1, 'W');
-    outb(COM1, 'o');
-    outb(COM1, 'r');
-    outb(COM1, 'l');
-    outb(COM1, 'd');
-    outb(COM1, '\n');
-    outb(COM1, inb(COM1));
-    outb(COM1, inb(COM1));
-    outb(COM1, inb(COM1));
-    outb(COM1, inb(COM1));
-    outb(COM1, '\n');
+    serial_write_str("Echo program running in KVM\n");
 
     for (;;)
     {
-        asm volatile("hlt");
+        serial_write_char(serial_read());
     }
 }
