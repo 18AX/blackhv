@@ -1,16 +1,15 @@
-CC=gcc
-CFLAGS+=-g3 -Wall -Werror -Wextra -pedantic -Iinclude/ -fsanitize=address
-LFLAGS= -lasan
-
 BUILD_DIR=build
 SRC_DIR=src
 
-TARGET=$(BUILD_DIR)/blackhv
+CC=gcc
+CFLAGS+=-g3 -Wall -Werror -Wextra -pedantic -Iinclude/
+LFLAGS=-lasan -L./$(BUILD_DIR) -lblackhv
+
+TARGET=$(BUILD_DIR)/libblackhv.a
 
 .PHONY: all clean
 
-OBJECTS=main.o \
-		vm.o \
+OBJECTS=vm.o \
 		linked_list.o \
 		io.o \
 		queue.o \
@@ -19,11 +18,14 @@ OBJECTS=main.o \
 all: $(TARGET)
 
 $(TARGET): $(addprefix $(BUILD_DIR)/, $(OBJECTS))
-	$(CC) $^ -o $(TARGET) $(LFLAGS)
+	ar -rcs $(TARGET) $^
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(shell dirname $@)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+example: $(TARGET) $(BUILD_DIR)/main.o
+	$(CC) $(BUILD_DIR)/main.o -o $(BUILD_DIR)/example $(LFLAGS)
 
 clean:
 	$(RM) -rf $(BUILD_DIR)
