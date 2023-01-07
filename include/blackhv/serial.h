@@ -13,7 +13,8 @@
 typedef struct
 {
     u16 port;
-    queue_t *queue;
+    queue_t *guest_queue; // Write from guest to host
+    queue_t *host_queue; // Write from host to guest
 } serial_t;
 
 /**
@@ -23,6 +24,14 @@ serial_t *serial_new(u16 port, size_t internal_buffer_size);
 
 void serial_destroy(serial_t *serial);
 
+/**
+ * Read data sent by the guest
+ */
 size_t serial_read(serial_t *serial, u8 *buffer, size_t len);
+
+/**
+ * Write data to the guest
+ */
+size_t serial_write(serial_t *serial, u8 *buffer, size_t len);
 
 #endif

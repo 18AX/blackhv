@@ -86,6 +86,16 @@ size_t queue_read(queue_t *queue, u8 *buffer, size_t size)
     return i;
 }
 
+u32 queue_empty(queue_t *queue)
+{
+    if (queue == NULL)
+    {
+        return 0;
+    }
+
+    return queue->is_full != 1 && queue->front == queue->rear;
+}
+
 void queue_destroy(queue_t *queue)
 {
     if (queue == NULL)

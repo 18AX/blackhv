@@ -38,6 +38,10 @@ __attribute__((naked, section(".boot"))) void _start(void)
     outb(COM1, 'd');
     outb(COM1, '\n');
     outb(COM1, inb(COM1));
+    outb(COM1, inb(COM1));
+    outb(COM1, inb(COM1));
+    outb(COM1, inb(COM1));
+    outb(COM1, '\n');
 
     for (;;)
     {

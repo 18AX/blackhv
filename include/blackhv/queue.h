@@ -20,6 +20,8 @@ size_t queue_write(queue_t *queue, u8 *buffer, size_t size);
 
 size_t queue_read(queue_t *queue, u8 *buffer, size_t size);
 
+u32 queue_empty(queue_t *queue);
+
 void queue_destroy(queue_t *queue);
 
 #endif

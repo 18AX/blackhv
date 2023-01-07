@@ -17,6 +17,8 @@ void *worker(void *params)
 
     serial_t *serial = serial_new(COM1, 1024);
 
+    serial_write(serial, (u8 *)"TOTO", 4);
+
     for (;;)
     {
         u8 chr = 0;
