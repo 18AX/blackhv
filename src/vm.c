@@ -133,7 +133,7 @@ static s32 set_protected_mode(vm_t *vm, u64 code_addr)
 
     if (ioctl(vm->vcpu_fd, KVM_GET_SREGS, &sregs) < 0)
     {
-        return -1;
+        return 0;
     }
 
     struct kvm_segment code = {
@@ -174,7 +174,7 @@ static s32 set_protected_mode(vm_t *vm, u64 code_addr)
 
     if (ioctl(vm->vcpu_fd, KVM_SET_SREGS, &sregs) < 0)
     {
-        return -1;
+        return 0;
     }
 
     struct kvm_regs regs;
@@ -185,10 +185,10 @@ static s32 set_protected_mode(vm_t *vm, u64 code_addr)
 
     if (ioctl(vm->vcpu_fd, KVM_SET_REGS, &regs) < 0)
     {
-        return -1;
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 s32 vm_vcpu_set_state(vm_t *vm, u64 code_addr, u32 mode)
@@ -196,20 +196,20 @@ s32 vm_vcpu_set_state(vm_t *vm, u64 code_addr, u32 mode)
     vm->vcpu_fd = ioctl(vm->vm_fd, KVM_CREATE_VCPU, 0);
     if (vm->vcpu_fd < 0)
     {
-        return -1;
+        return 0;
     }
 
     s32 vcpu_size = ioctl(vm->kvm_fd, KVM_GET_VCPU_MMAP_SIZE, 0);
     if (vcpu_size <= 0)
     {
-        return -1;
+        return 0;
     }
 
     vm->kvm_run = mmap(
         NULL, vcpu_size, PROT_READ | PROT_WRITE, MAP_SHARED, vm->vcpu_fd, 0);
     if (vm->kvm_run == MAP_FAILED)
     {
-        return -1;
+        return 0;
     }
 
     if ((mode & REAL_MODE) != 0)
@@ -221,7 +221,7 @@ s32 vm_vcpu_set_state(vm_t *vm, u64 code_addr, u32 mode)
         return set_protected_mode(vm, code_addr);
     }
 
-    return -1;
+    return 1;
 }
 
 static u32 next_slot = 0;
