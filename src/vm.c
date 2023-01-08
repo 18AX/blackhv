@@ -301,9 +301,11 @@ s64 vm_memory_write(vm_t *vm, u64 dest_addr, u8 *buffer, u64 size)
             s64 written = 0;
             s64 mem_limit = (s64)(m->size - dest_addr);
 
+            u64 base_addr = dest_addr - m->guest_phys;
+
             for (; written < mem_limit && written < (s64)size; ++written)
             {
-                ((u8 *)m->ptr)[dest_addr + written] = buffer[written];
+                ((u8 *)m->ptr)[base_addr + written] = buffer[written];
             }
 
             return written;
