@@ -50,7 +50,7 @@ void vm_destroy(vm_t *vm);
  * @param code_addr : address of code executed by vm
  * @param mode : which mode will be used by vm
  */
-s32 vm_vcpu_set_state(vm_t *vm, u64 code_addr, u32 mode);
+s32 vm_vcpu_init_state(vm_t *vm, u64 code_addr, u32 mode);
 
 /**
  * Allocate the memory that will be usable by the guest

@@ -77,7 +77,7 @@ int main(int argc, const char *argv[])
 
     printf("Vm created\n");
 
-    s32 init = vm_vcpu_set_state(vm, START_ADDRESS, PROTECTED_MODE);
+    s32 init = vm_vcpu_init_state(vm, START_ADDRESS, PROTECTED_MODE);
     if (init == 0)
     {
         errx(1, "Failed to initialize virtual cpu");

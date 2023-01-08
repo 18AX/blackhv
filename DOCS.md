@@ -60,10 +60,10 @@ Write data to the guest memory. The destination is a physical memory address.
 
 **return**: the number of bytes written.
 
-### vm_vcpu_set_state
+### vm_vcpu_init_state
 
 ```c
-s32 vm_vcpu_set_state(vm_t *vm, u64 code_addr, u32 mode);
+s32 vm_vcpu_init_state(vm_t *vm, u64 code_addr, u32 mode);
 ```
 
 Initialize the state of a virtual CPU. Mode is either `REAL_MODE` or `PROTECTED_MODE`. The `code_addr` is the address set in the instruction pointer register.
