@@ -41,7 +41,7 @@ void *worker1(void *params)
     {
         char c;
 
-        if (serial_read(serial, (u8 *)&c, 1) != 0)
+        if (serial_read(serial, (u8 *)&c, 1) == 1)
         {
             putchar(c);
         }
@@ -70,19 +70,23 @@ int main(int argc, const char *argv[])
         errx(1, "Failed to create a vm object");
     }
 
+    s32 init = vm_vcpu_init_state(vm,
+                                  START_ADDRESS,
+                                  0xffffd000,
+                                  0xffffc000,
+                                  PROTECTED_MODE | CREATE_IRQCHIP | CREATE_PIT);
+
+    if (init == 0)
+    {
+        errx(1, "Failed to initialize virtual cpu");
+    }
+
     if (vm_alloc_memory(vm, 0x0, MB_1) == 0)
     {
         errx(1, "Failed to allocate 1 Mb of memory");
     }
 
     printf("Vm created\n");
-
-    s32 init = vm_vcpu_init_state(vm, START_ADDRESS, PROTECTED_MODE);
-    if (init == 0)
-    {
-        errx(1, "Failed to initialize virtual cpu");
-    }
-
     printf("Vcpu initialized\n");
 
     ssize_t readed = 0;

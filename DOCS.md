@@ -63,10 +63,20 @@ Write data to the guest memory. The destination is a physical memory address.
 ### vm_vcpu_init_state
 
 ```c
-s32 vm_vcpu_init_state(vm_t *vm, u64 code_addr, u32 mode);
+s32 vm_vcpu_init_state(vm_t *vm,
+                       u64 code_addr,
+                       u64 tss_address,
+                       u64 identity_map_address,
+                       u32 flags);
 ```
 
-Initialize the state of a virtual CPU. Mode is either `REAL_MODE` or `PROTECTED_MODE`. The `code_addr` is the address set in the instruction pointer register.
+Initialize the state of a virtual CPU. The `code_addr` is the address set in the instruction pointer register. The `tss_address` **must be not** conflicting with a mmio memory area or a memory slot. Same for `identity_map_address`.
+
+The list of possiblie flags:
+- REAL_MODE
+- PROTECTED_MODE
+- CREATE_IRQCHIP
+- CREATE_PIT
 
 **return**: 1 on success, 0 otherwise.
 

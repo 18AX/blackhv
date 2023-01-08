@@ -191,8 +191,37 @@ static s32 set_protected_mode(vm_t *vm, u64 code_addr)
     return 1;
 }
 
-s32 vm_vcpu_init_state(vm_t *vm, u64 code_addr, u32 mode)
+#include <stdio.h>
+s32 vm_vcpu_init_state(vm_t *vm,
+                       u64 code_addr,
+                       u64 tss_address,
+                       u64 identity_map_addr,
+                       u32 mode)
 {
+    if (ioctl(vm->vm_fd, KVM_SET_TSS_ADDR, tss_address, 0) < 0
+        || ioctl(vm->vm_fd, KVM_SET_IDENTITY_MAP_ADDR, &identity_map_addr, 0)
+            < 0)
+    {
+        printf("JERE\n");
+        return 0;
+    }
+
+    if ((mode & CREATE_IRQCHIP) != 0
+        && ioctl(vm->vm_fd, KVM_CREATE_IRQCHIP, 0) < 0)
+    {
+        return 0;
+    }
+
+    if ((mode & CREATE_PIT) != 0)
+    {
+        struct kvm_pit_config pit_config = { 0 };
+
+        if (ioctl(vm->vm_fd, KVM_CREATE_PIT2, &pit_config, 0) < 0)
+        {
+            return 0;
+        }
+    }
+
     vm->vcpu_fd = ioctl(vm->vm_fd, KVM_CREATE_VCPU, 0);
     if (vm->vcpu_fd < 0)
     {
