@@ -108,3 +108,62 @@ if (vm_run(vm) != 1)
     errx(1, "Failed to run VM\n");
 }
 ```
+
+## serial.h
+
+This header provides some functions to emulate a UART device.
+
+- [serial_new](#serial_new)
+- [serial_destroy](#serial_destroy)
+- [serial_read](#serial_read)
+- [serial_write](#serial_write)
+
+### serial_new
+
+```c
+serial_t *serial_new(u16 port, size_t internal_buffer_size);
+```
+
+Create a UART device on a defined port. Ports address to `port + 7` should not be conflicting with another IO device.
+
+**return**: `serial_t` object on success, `NULL` otherwise.
+
+#### Example
+
+```c
+// COM1 is define in serial.h
+serial_t *serial = serial_new(COM1, 1024);
+
+if (serial == NULL)
+{
+    errx(1, "Failed to initialize a serial device");
+}
+```
+
+### serial_destroy
+
+```c
+void serial_destroy(serial_t *serial);
+```
+
+Free all the memory used by a `serial_t` object.
+
+### serial_read
+
+```c
+size_t serial_read(serial_t *serial, u8 *buffer, size_t len);
+```
+
+Read data written by the guest on the port address.
+
+**return**: number of bytes readed.
+
+### serial_write
+
+```c
+size_t serial_write(serial_t *serial, u8 *buffer, size_t len);
+```
+
+Write data to the guest.
+
+**return**: number of bytes written.
