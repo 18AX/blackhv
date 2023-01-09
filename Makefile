@@ -24,6 +24,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(shell dirname $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+tests: $(TARGET) $(BUILD_DIR)/tests.o
+	$(CC) $(BUILD_DIR)/tests.o -o $(BUILD_DIR)/tests $(LFLAGS) -lcriterion
+	./$(BUILD_DIR)/tests --verbose
+
 example: $(TARGET) $(BUILD_DIR)/main.o
 	$(CC) $(BUILD_DIR)/main.o -o $(BUILD_DIR)/example $(LFLAGS)
 

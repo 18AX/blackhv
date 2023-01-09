@@ -7,6 +7,7 @@ BlackHV is a library that aims to make virtualization easy from a programming po
 ```sh
 make # build the libblackhv in the build directory
 make example # build the example in the build directory
+make tests # Run unit tests
 ```
 
 ## Documention
