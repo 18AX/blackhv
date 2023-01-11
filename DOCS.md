@@ -167,3 +167,91 @@ size_t serial_write(serial_t *serial, u8 *buffer, size_t len);
 Write data to the guest.
 
 **return**: number of bytes written.
+
+## mmio.h
+
+Create a mmio handler to helps registering your mmio device emulation. `mmio_init` should be call before registering handlers.
+
+```c
+static void mmio_write_handler(struct mmio_region *region,
+                        u64 address,
+                        u8 data[8],
+                        u32 len,
+                        void *arg)
+{
+    (void)arg;
+    printf(
+        "mmio_id: %d address: %llx len: %u data: ", region->id, address, len);
+
+    for (u32 i = 0; i < len; ++i)
+    {
+        printf("%x ", data[i]);
+    }
+
+    printf("\n");
+}
+
+
+void main(void)
+{
+
+    struct mmio_region region = { .base_address = 0xC0000000,
+                                  .high_address = 0xC1000000,
+                                  .write_handler = mmio_write_handler,
+                                  .read_handler = NULL,
+                                  .data = NULL };
+
+    s32 mmio_region_id = mmio_register(&region);
+
+    if (mmio_region_id < 0)
+    {
+        errx(1, "Failed to register a mmio region");
+    }
+}
+```
+
+### mmio_init
+
+```c
+void mmio_init(void);
+```
+
+Initialize the mmio handler. It needs to be done before registering handlers.
+
+### mmio_register
+
+```c
+s32 mmio_register(struct mmio_region *region);
+```
+
+Register a MMIO region. The structure `mmio_region` describes a MMIO region and the write and read handler associated with it.
+
+**return**: the ID of the memory region. The ID has to be used to unregister the region. On error it returns -1.
+
+```c
+struct mmio_region
+{
+    s32 id; // ID will be set by the mmio_register function
+    u64 base_address;
+    u64 high_address;
+    void (*write_handler)(struct mmio_region *region,
+                          u64 address,
+                          u8 data[8],
+                          u32 len,
+                          void *arg);
+    void (*read_handler)(struct mmio_region *region,
+                         u64 address,
+                         u8 data[8],
+                         u32 len,
+                         void *arg);
+    void *data; // Data given as a arg to the write and read handler
+};
+```
+
+### mmio_unregister
+
+```c
+void mmio_unregister(s32 id);
+```
+
+Unregister a MMIO region. The ID corresponds to the ID given by `mmio_register`.
