@@ -1,5 +1,6 @@
 #include <blackhv/cpu.h>
 #include <blackhv/io.h>
+#include <blackhv/mmio.h>
 #include <blackhv/vm.h>
 #include <err.h>
 #include <fcntl.h>
@@ -387,6 +388,15 @@ s32 vm_run(vm_t *vm)
                     *(tmp + vm->kvm_run->io.data_offset) =
                         io_handle_inb(vm->kvm_run->io.port);
                 }
+            }
+            break;
+        }
+        case KVM_EXIT_MMIO: {
+            if (vm->kvm_run->mmio.is_write)
+            {
+                mmio_handle_write(vm->kvm_run->mmio.phys_addr,
+                                  vm->kvm_run->mmio.data,
+                                  vm->kvm_run->mmio.len);
             }
             break;
         }

@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 
+#include <blackhv/mmio.h>
 #include <blackhv/serial.h>
 #include <blackhv/vm.h>
 #include <err.h>
@@ -12,6 +13,24 @@
 
 #define BUFFER_SIZE 1024
 #define START_ADDRESS 0x7c00
+
+void mmio_write_handler(struct mmio_region *region,
+                        u64 address,
+                        u8 data[8],
+                        u32 len,
+                        void *arg)
+{
+    (void)arg;
+    printf(
+        "mmio_id: %d address: %llx len: %u data: ", region->id, address, len);
+
+    for (u32 i = 0; i < len; ++i)
+    {
+        printf("%x ", data[i]);
+    }
+
+    printf("\n");
+}
 
 void *worker0(void *params)
 {
@@ -105,6 +124,21 @@ int main(int argc, const char *argv[])
     }
 
     close(fd);
+
+    mmio_init();
+
+    struct mmio_region region = { .base_address = 0xC0000000,
+                                  .high_address = 0xC1000000,
+                                  .write_handler = mmio_write_handler,
+                                  .read_handler = NULL,
+                                  .data = NULL };
+
+    s32 mmio_region_id = mmio_register(&region);
+
+    if (mmio_region_id < 0)
+    {
+        errx(1, "Failed to register a mmio region");
+    }
 
     printf("Launching the VM\n");
 

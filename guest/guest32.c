@@ -61,6 +61,9 @@ __attribute__((naked, section(".boot"))) void _start(void)
 
     serial_write_str("Echo program running in KVM\n");
 
+    char *ptr = (char *)0xC000000A;
+    *ptr = 'A';
+
     for (;;)
     {
         serial_write_char(serial_read());
