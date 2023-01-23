@@ -145,7 +145,7 @@ s64 memory_write(vm_t *vm, u64 dest, u8 *buffer, u64 size)
 {
     struct memory_entry *entry = find_entry(vm, dest);
 
-    if (entry == NULL)
+    if (entry == NULL || entry->type != MEMORY_USABLE)
     {
         return -1;
     }
