@@ -113,7 +113,7 @@ serial_t *serial_new(u16 port, size_t internal_buffer_size)
     // Register the handler for all the serial register
     for (size_t i = 0; i < 8; ++i)
     {
-        io_register_handler(port, handler);
+        io_register_handler(port + i, handler);
     }
 
     return serial;

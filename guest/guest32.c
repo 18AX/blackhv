@@ -23,9 +23,10 @@ void serial_write_char(char c)
     unsigned char status = inb(COM1 + 5);
 
     // Wait for the serial to be ready
-    while ((status & 0x5) == 0)
+    while (((status >> 5) & 1) == 0)
     {
         asm volatile("pause");
+        status = inb(COM1 + 5);
     }
 
     outb(COM1, c);
@@ -47,6 +48,7 @@ unsigned char serial_read()
     while ((status & 0x1) == 0)
     {
         asm volatile("pause");
+        status = inb(COM1 + 5);
     }
 
     return inb(COM1);

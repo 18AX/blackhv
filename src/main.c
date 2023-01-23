@@ -39,16 +39,17 @@ void *worker0(void *params)
     serial_t *serial = (serial_t *)params;
 
     char *line = NULL;
-    size_t len = 0;
+    size_t buffer_len = 0;
 
     for (;;)
     {
-        if (getline(&line, &len, stdin) == -1)
+        ssize_t read_len = getline(&line, &buffer_len, stdin);
+        if (read_len == -1)
         {
             errx(1, "getline failed");
         }
 
-        serial_write(serial, (u8 *)line, len);
+        serial_write(serial, (u8 *)line, read_len);
     }
 }
 
