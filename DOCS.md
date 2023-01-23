@@ -89,6 +89,69 @@ if (vm_vcpu_set_state(vm, START_ADDRESS, PROTECTED_MODE) != 1)
 }
 ```
 
+### vm_e820_table_get
+
+```c
+struct e820_table *vm_e820_table_get(vm_t *vm);
+```
+
+Get the e820 table (memory map) of a `vm_t` object
+
+**return**: `struct e820_table *` on success, NULL otherwise. The return value has to be freed with `vm_e820_table_free`
+
+```c
+#define E820_USABLE 0x1
+#define E820_RESERVED 0x2
+#define E820_ACPI_RECLAIMED 0x3
+#define E820_ACPI_NVS 0x4
+#define E820_BAD_MEMORY 0x5
+
+struct e820_entry
+{
+    u64 base_address;
+    u64 size;
+    u32 type;
+};
+
+struct e820_table
+{
+    struct e820_entry *entries;
+    u64 length;
+};
+```
+
+#### Example
+
+```c
+struct e820_table *e820_table = vm_e820_table_get(vm);
+
+if (e820_table == NULL)
+{
+    return;
+}
+
+printf("e820 table:\n");
+for (size_t i = 0; i < e820_table->length; ++i)
+{
+    printf("base address: %llx size: %llx type: %u",
+           e820_table->entries[i].base_address,
+           e820_table->entries[i].size,
+           e820_table->entries[i].type);
+}
+
+printf("\n");
+
+vm_e820_table_free(e820_table);
+```
+
+### vm_e820_table_free
+
+```c
+void vm_e820_table_free(struct e820_table *table);
+```
+
+Free a `struct e820_table`.
+
 ### vm_run
 
 ```c
