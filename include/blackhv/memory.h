@@ -5,6 +5,10 @@
 #include <blackhv/types.h>
 #include <blackhv/vm.h>
 
+#define KB_1 (1 << 10)
+#define MB_1 (1 << 20)
+#define GB_1 (1 << 30)
+
 #define MEMORY_USABLE 0x1
 #define MEMORY_MMIO 0x2
 

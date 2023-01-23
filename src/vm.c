@@ -157,12 +157,12 @@ static s32 set_protected_mode(vm_t *vm, u64 code_addr)
     regs.rflags = 2;
     regs.rip = code_addr;
 
-    if (ioctl(vm->vcpu_fd, KVM_SET_REGS, &regs) < 0)
-    {
-        return 0;
-    }
+    return vm_set_regs(vm, &regs);
+}
 
-    return 1;
+s32 vm_set_regs(vm_t *vm, struct kvm_regs *regs)
+{
+    return ioctl(vm->vcpu_fd, KVM_SET_REGS, regs) == 0;
 }
 
 #include <stdio.h>
