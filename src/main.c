@@ -67,6 +67,27 @@ void *worker1(void *params)
     }
 }
 
+void dump_e820_table(vm_t *vm)
+{
+    struct e820_table *e820_table = vm_e820_table_get(vm);
+
+    if (e820_table == NULL)
+    {
+        return;
+    }
+
+    printf("e820 table:\n");
+    for (size_t i = 0; i < e820_table->length; ++i)
+    {
+        printf("base address: %llx size: %llx type: %u",
+               e820_table->entries[i].base_address,
+               e820_table->entries[i].size,
+               e820_table->entries[i].type);
+    }
+
+    printf("\n");
+}
+
 int main(int argc, const char *argv[])
 {
     if (argc != 2)
@@ -149,6 +170,8 @@ int main(int argc, const char *argv[])
 
     pthread_t th1;
     pthread_create(&th1, NULL, worker1, serial);
+
+    dump_e820_table(vm);
 
     sleep(1);
 

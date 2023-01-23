@@ -347,6 +347,51 @@ s64 vm_memory_write(vm_t *vm, u64 dest_addr, u8 *buffer, u64 size)
     return -1;
 }
 
+struct e820_table *vm_e820_table_get(vm_t *vm)
+{
+    struct e820_table *table = malloc(sizeof(struct e820_table));
+
+    if (table == NULL)
+    {
+        return NULL;
+    }
+
+    table->length = linked_list_size(vm->memory_list);
+    table->entries = malloc(sizeof(struct e820_entry) * table->length);
+
+    if (table->entries == NULL)
+    {
+        free(table);
+        return NULL;
+    }
+
+    struct linked_list_elt *current = vm->memory_list->head;
+
+    for (size_t i = 0; current != NULL && i < table->length; ++i)
+    {
+        struct memory_mapped *map = (struct memory_mapped *)current->value;
+
+        table->entries[i].base_address = map->guest_phys;
+        table->entries[i].size = map->size;
+        table->entries[i].base_address = E820_USABLE;
+
+        current = current->next;
+    }
+
+    return table;
+}
+
+void vm_e820_table_free(struct e820_table *table)
+{
+    if (table == NULL)
+    {
+        return;
+    }
+
+    free(table->entries);
+    free(table);
+}
+
 #include <stdio.h>
 
 s32 vm_run(vm_t *vm)
