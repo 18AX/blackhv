@@ -373,7 +373,7 @@ struct e820_table *vm_e820_table_get(vm_t *vm)
 
         table->entries[i].base_address = map->guest_phys;
         table->entries[i].size = map->size;
-        table->entries[i].base_address = E820_USABLE;
+        table->entries[i].type = E820_USABLE;
 
         current = current->next;
     }

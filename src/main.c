@@ -86,6 +86,8 @@ void dump_e820_table(vm_t *vm)
     }
 
     printf("\n");
+
+    vm_e820_table_free(e820_table);
 }
 
 int main(int argc, const char *argv[])
