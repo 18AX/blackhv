@@ -1,5 +1,62 @@
+#include <asm/bootparam.h>
+#include <blackhv/memory.h>
+#include <blackhv/serial.h>
+#include <blackhv/vm.h>
 #include <err.h>
+#include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#define BOOT_PARAMS_ADDR 0x10000
+#define CMD_LINE_ADDR 0x20000
+#define KERNEL_ADDR 0x100000
+
+static vm_t *init_vm()
+{
+    vm_t *vm = vm_new();
+
+    if (vm == NULL)
+    {
+        errx(1, "Failed to init VM");
+    }
+
+    // start address is updated later
+    if (vm_vcpu_init_state(vm,
+                           0x0,
+                           0xffffd000,
+                           0xffffc000,
+                           PROTECTED_MODE | CREATE_IRQCHIP | CREATE_PIT)
+        == 0)
+    {
+        errx(1, "Failed to initialize vcpu state");
+    }
+
+    return vm;
+}
+
+static void load_linux(vm_t *vm, char *image)
+{
+    (void)vm;
+    struct boot_params *boot_params = malloc(sizeof(struct boot_params));
+
+    memset(boot_params, 0x0, sizeof(struct boot_params));
+
+    // Copy the setup header
+    memcpy(&boot_params->hdr, image + 0x1F1, sizeof(struct setup_header));
+
+    boot_params->hdr.boot_flag |= CAN_USE_HEAP | KEEP_SEGMENTS;
+    boot_params->hdr.heap_end_ptr = 0xFE00;
+    boot_params->hdr.cmd_line_ptr = 0x20000;
+    boot_params->hdr.type_of_loader = 0xFF;
+
+    printf("sentinel %x\n", boot_params->sentinel);
+
+    free(boot_params);
+}
 
 int main(int argc, char *argv[])
 {
@@ -8,6 +65,37 @@ int main(int argc, char *argv[])
         errx(1, "invalid args: ./linux_example <bzimage>");
     }
 
-    printf("bzimage %s\n", argv[1]);
+    vm_t *vm = init_vm();
+
+    if (memory_alloc(vm, 0x0, GB_1, MEMORY_USABLE) != 1)
+    {
+        errx(1, "Failed to allocate memory");
+    }
+
+    int fd = open(argv[1], O_RDONLY);
+
+    if (fd < 0)
+    {
+        errx(1, "Failed to open %s", argv[1]);
+    }
+
+    struct stat stat;
+
+    if (fstat(fd, &stat) < 0)
+    {
+        errx(1, "Failed to fstat");
+    }
+
+    char *map = mmap(0x0, stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+
+    if (map == MAP_FAILED)
+    {
+        errx(1, "mmap failed");
+    }
+
+    load_linux(vm, map);
+
+    vm_destroy(vm);
+
     return 0;
 }
