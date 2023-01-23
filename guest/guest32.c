@@ -1,3 +1,8 @@
+#include "splash.h"
+
+#define GRAPHIC_WIDTH 640
+#define GRAPHIC_HEIGHT 400
+
 #define STACK_SIZE 16384
 
 #define COM1 0x3F8
@@ -16,6 +21,27 @@ static unsigned char inb(unsigned short addr)
     asm volatile("inb %1, %0" : "=&a"(res) : "d"(addr));
 
     return res;
+}
+
+static void show_splash_screen()
+{
+    int top = (GRAPHIC_HEIGHT - SPLASH_HEIGHT) / 2;
+    int left = (GRAPHIC_WIDTH - SPLASH_WIDTH) / 2;
+    unsigned char *framebuffer = (unsigned char *)0xC2000000;
+
+    for (int j = 0; j < SPLASH_HEIGHT; j++)
+    {
+        for (int i = 0; i < SPLASH_WIDTH; i++)
+        {
+            framebuffer[((top + j) * GRAPHIC_WIDTH + left + i) * 4] =
+                splash[j * SPLASH_WIDTH + i];
+            framebuffer[((top + j) * GRAPHIC_WIDTH + left + i) * 4 + 1] =
+                splash[j * SPLASH_WIDTH + i];
+            framebuffer[((top + j) * GRAPHIC_WIDTH + left + i) * 4 + 2] =
+                splash[j * SPLASH_WIDTH + i];
+            framebuffer[((top + j) * GRAPHIC_WIDTH + left + i) * 4 + 3] = 255;
+        }
+    }
 }
 
 void serial_write_char(char c)
@@ -65,6 +91,18 @@ __attribute__((naked, section(".boot"))) void _start(void)
 
     char *ptr = (char *)0xC000000A;
     *ptr = 'A';
+
+    unsigned char *framebuffer = (unsigned char *)0xC2000000;
+    for (int i = 0; i < 640 * 400 * 4; i += 4)
+    {
+        // White background
+        framebuffer[i] = 0;
+        framebuffer[i + 1] = 0;
+        framebuffer[i + 2] = 0;
+        framebuffer[i + 3] = 255;
+    }
+
+    show_splash_screen();
 
     for (;;)
     {

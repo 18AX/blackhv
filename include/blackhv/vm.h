@@ -3,6 +3,7 @@
 
 #include <blackhv/linked_list.h>
 #include <blackhv/memory.h>
+#include <blackhv/screen.h>
 #include <blackhv/types.h>
 #include <linux/kvm.h>
 
@@ -17,7 +18,7 @@ typedef struct vm
     s32 vcpu_fd;
     struct kvm_run *kvm_run;
     memory_t *mem;
-
+    screen_t *screen;
 } vm_t;
 
 /**

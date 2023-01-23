@@ -7,6 +7,7 @@
 
 #define MEMORY_USABLE 0x1
 #define MEMORY_MMIO 0x2
+#define MEMORY_FRAMEBUFFER 0x3
 
 typedef struct vm vm_t;
 
@@ -56,10 +57,21 @@ s32 memory_alloc(vm_t *vm, u64 phys_addr, u64 size, u32 type);
  * Write into guest memory area
  *
  * @param vm vm to write to
+ * @param dest Guest physical memory address
  * @param buffer input data
  * @param size size in bytes
  */
 s64 memory_write(vm_t *vm, u64 dest, u8 *buffer, u64 size);
+
+/**
+ * Read from guest memory area
+ *
+ * @param vm vm to read from
+ * @param src_phys Guest physical memory address
+ * @param buffer Buffer of `size` bytes or larger
+ * @param size size to read in bytes
+ */
+s64 memory_read(vm_t *vm, u64 src_phys, u8 *buffer, u64 size);
 
 /**
  * Get e820 table of a vm.
