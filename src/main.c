@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 
+#include <blackhv/memory.h>
 #include <blackhv/mmio.h>
 #include <blackhv/serial.h>
 #include <blackhv/vm.h>
@@ -70,7 +71,7 @@ void *worker1(void *params)
 
 void dump_e820_table(vm_t *vm)
 {
-    struct e820_table *e820_table = vm_e820_table_get(vm);
+    struct e820_table *e820_table = e820_table_get(vm);
 
     if (e820_table == NULL)
     {
@@ -80,7 +81,7 @@ void dump_e820_table(vm_t *vm)
     printf("e820 table:\n");
     for (size_t i = 0; i < e820_table->length; ++i)
     {
-        printf("base address: %llx size: %llx type: %u",
+        printf("base address: %llx size: %llx type: %u\n",
                e820_table->entries[i].base_address,
                e820_table->entries[i].size,
                e820_table->entries[i].type);
@@ -88,7 +89,7 @@ void dump_e820_table(vm_t *vm)
 
     printf("\n");
 
-    vm_e820_table_free(e820_table);
+    e820_table_free(e820_table);
 }
 
 int main(int argc, const char *argv[])
@@ -124,7 +125,7 @@ int main(int argc, const char *argv[])
         errx(1, "Failed to initialize virtual cpu");
     }
 
-    if (vm_alloc_memory(vm, 0x0, MB_1) == 0)
+    if (memory_alloc(vm, 0x0, MB_1, MEMORY_USABLE) == 0)
     {
         errx(1, "Failed to allocate 1 Mb of memory");
     }
@@ -139,9 +140,11 @@ int main(int argc, const char *argv[])
 
     while ((r = read(fd, buffer, BUFFER_SIZE)) > 0)
     {
-        if (vm_memory_write(vm, START_ADDRESS + readed, buffer, r) < 0)
+        if (memory_write(vm, START_ADDRESS + readed, buffer, r) < 0)
         {
-            errx(1, "Failed to load the binary into memory");
+            errx(1,
+                 "Failed to load the binary into memory %ld",
+                 START_ADDRESS + readed);
         }
 
         readed += r;
@@ -157,7 +160,7 @@ int main(int argc, const char *argv[])
                                   .read_handler = NULL,
                                   .data = NULL };
 
-    s32 mmio_region_id = mmio_register(&region);
+    s32 mmio_region_id = mmio_register(vm, &region);
 
     if (mmio_region_id < 0)
     {
