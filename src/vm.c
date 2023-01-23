@@ -13,33 +13,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static void free_memory_mapped(void *ptr)
-{
-    if (ptr == NULL)
-    {
-        return;
-    }
-    struct memory_mapped *m = (struct memory_mapped *)ptr;
-
-    // TODO: Not working for an unknown reason
-#if 0
-    struct kvm_userspace_memory_region d = {
-        .slot = m->slot,
-        .flags = 0,
-        .guest_phys_addr = m->guest_phys,
-        .memory_size = 0,
-        .userspace_addr = (u64) m->ptr
-    };
-
-    if (ioctl(m->vm->vm_fd, KVM_SET_USER_MEMORY_REGION, d) == -1)
-    {
-        errx(1, "Failed to clear memory region fd=%d %u slot", m->vm->vm_fd, m->slot);
-    }
-#endif
-    munmap(m->ptr, m->size);
-    free(ptr);
-}
-
 vm_t *vm_new()
 {
     // We open kvm char device
@@ -69,9 +42,9 @@ vm_t *vm_new()
 
     vm->kvm_fd = fd;
     vm->vm_fd = vm_fd;
-    vm->memory_list = linked_list_new(free_memory_mapped);
+    vm->mem = memory_new();
 
-    if (vm->memory_list == NULL)
+    if (vm->mem == NULL)
     {
         close(fd);
         free(vm);
@@ -88,7 +61,7 @@ void vm_destroy(vm_t *vm)
         return;
     }
 
-    linked_list_free(vm->memory_list);
+    memory_destroy(vm->mem);
     close(vm->kvm_fd);
     close(vm->vm_fd);
     free(vm);
@@ -252,144 +225,6 @@ s32 vm_vcpu_init_state(vm_t *vm,
     }
 
     return 1;
-}
-
-static u32 next_slot = 0;
-
-s32 vm_alloc_memory(vm_t *vm, u64 phys_addr, u64 size)
-{
-    // Allocate the memory
-    void *mem_ptr = mmap(NULL,
-                         size,
-                         PROT_READ | PROT_WRITE,
-                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-                         -1,
-                         0);
-
-    if (mem_ptr == NULL)
-    {
-        return 0;
-    }
-
-    // Add the memory to vm
-    struct kvm_userspace_memory_region region = { .slot = next_slot,
-                                                  .flags = 0,
-                                                  .guest_phys_addr = phys_addr,
-                                                  .memory_size = size,
-                                                  .userspace_addr =
-                                                      (u64)mem_ptr };
-
-    if (ioctl(vm->vm_fd, KVM_SET_USER_MEMORY_REGION, &region) == -1)
-    {
-        munmap(mem_ptr, size);
-        return 0;
-    }
-
-    next_slot = next_slot + 1;
-
-    struct memory_mapped *m = malloc(sizeof(struct memory_mapped));
-
-    if (m == NULL)
-    {
-        munmap(mem_ptr, size);
-        return 0;
-    }
-
-    m->slot = region.slot;
-    m->vm = vm;
-    m->ptr = mem_ptr;
-    m->guest_phys = phys_addr;
-    m->size = size;
-
-    if (linked_list_add(vm->memory_list, m) == 0)
-    {
-        munmap(mem_ptr, size);
-        free(m);
-        return 0;
-    }
-
-    return 1;
-}
-
-s64 vm_memory_write(vm_t *vm, u64 dest_addr, u8 *buffer, u64 size)
-{
-    if (vm == NULL)
-    {
-        return -1;
-    }
-
-    struct linked_list_elt *curr = vm->memory_list->head;
-
-    // try to find the destination memory
-    while (curr != NULL)
-    {
-        struct memory_mapped *m = (struct memory_mapped *)curr->value;
-
-        if (dest_addr >= m->guest_phys && dest_addr < m->guest_phys + m->size)
-        {
-            // Copy buffer to destination
-            s64 written = 0;
-            s64 mem_limit = (s64)(m->size - dest_addr);
-
-            u64 base_addr = dest_addr - m->guest_phys;
-
-            for (; written < mem_limit && written < (s64)size; ++written)
-            {
-                ((u8 *)m->ptr)[base_addr + written] = buffer[written];
-            }
-
-            return written;
-        }
-
-        curr = curr->next;
-    }
-
-    return -1;
-}
-
-struct e820_table *vm_e820_table_get(vm_t *vm)
-{
-    struct e820_table *table = malloc(sizeof(struct e820_table));
-
-    if (table == NULL)
-    {
-        return NULL;
-    }
-
-    table->length = linked_list_size(vm->memory_list);
-    table->entries = malloc(sizeof(struct e820_entry) * table->length);
-
-    if (table->entries == NULL)
-    {
-        free(table);
-        return NULL;
-    }
-
-    struct linked_list_elt *current = vm->memory_list->head;
-
-    for (size_t i = 0; current != NULL && i < table->length; ++i)
-    {
-        struct memory_mapped *map = (struct memory_mapped *)current->value;
-
-        table->entries[i].base_address = map->guest_phys;
-        table->entries[i].size = map->size;
-        table->entries[i].type = E820_USABLE;
-
-        current = current->next;
-    }
-
-    return table;
-}
-
-void vm_e820_table_free(struct e820_table *table)
-{
-    if (table == NULL)
-    {
-        return;
-    }
-
-    free(table->entries);
-    free(table);
 }
 
 #include <stdio.h>

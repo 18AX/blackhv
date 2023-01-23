@@ -15,6 +15,7 @@ OBJECTS=vm.o \
 		queue.o \
 		serial.o \
 		mmio.o \
+		memory.o \
 
 all: $(TARGET)
 

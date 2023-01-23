@@ -2,6 +2,7 @@
 #define MMIO_HEADER
 
 #include <blackhv/types.h>
+#include <blackhv/vm.h>
 
 struct mmio_region
 {
@@ -23,7 +24,7 @@ struct mmio_region
 
 void mmio_init(void);
 
-s32 mmio_register(struct mmio_region *region);
+s32 mmio_register(vm_t *vm, struct mmio_region *region);
 
 void mmio_unregister(s32 id);
 

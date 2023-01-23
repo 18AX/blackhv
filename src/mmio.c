@@ -1,3 +1,4 @@
+#include <blackhv/memory.h>
 #include <blackhv/mmio.h>
 #include <string.h>
 
@@ -14,8 +15,17 @@ void mmio_init()
     }
 }
 
-s32 mmio_register(struct mmio_region *region)
+s32 mmio_register(vm_t *vm, struct mmio_region *region)
 {
+    if (memory_alloc(vm,
+                     region->base_address,
+                     region->high_address - region->base_address,
+                     MEMORY_MMIO)
+        == 0)
+    {
+        return -1;
+    }
+
     for (s32 i = 0; i < MAX_MMIO_REGION_COUNT; ++i)
     {
         if (mmio_regions[i].id == -1)
