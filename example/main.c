@@ -4,16 +4,19 @@
 #include <blackhv/vm.h>
 #include <err.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define BOOT_PARAMS_ADDR 0x10000
-#define REAL_MODE_LOAD_ADDR 0x90000
+#define REAL_MODE_ADDR 0x90000
 #define KERNEL_ADDR 0x100000
+#define CMD_LINE "console=ttyS0"
 
 static vm_t *init_vm()
 {
@@ -38,22 +41,6 @@ static vm_t *init_vm()
     return vm;
 }
 
-static void setup_header(struct setup_header *hdr)
-{
-    hdr->boot_flag |= CAN_USE_HEAP | LOADED_HIGH;
-
-    // For now we dont load a ramdisk
-    hdr->ramdisk_image = 0;
-    hdr->ram_size = 0;
-
-    hdr->heap_end_ptr = 0xe000 - 0x200; // We assume that protocol >= 0x202
-    hdr->cmd_line_ptr = REAL_MODE_LOAD_ADDR + hdr->heap_end_ptr;
-
-    hdr->type_of_loader = 0xFF;
-    hdr->ext_loader_type = 0;
-    hdr->ext_loader_ver = 0;
-}
-
 static void setup_e820(vm_t *vm, struct boot_params *params)
 {
     struct e820_table *table = e820_table_get(vm);
@@ -75,46 +62,106 @@ static void setup_e820(vm_t *vm, struct boot_params *params)
     e820_table_free(table);
 }
 
-static void copy_image_into_memory(vm_t *vm,
-                                   struct setup_header *hdr,
+static void set_setup_header(struct boot_params *boot_params)
+{
+    boot_params->hdr.vid_mode = 0xFFFF; // VGA
+    boot_params->hdr.type_of_loader = 0xFF;
+    boot_params->hdr.ramdisk_image = 0x0;
+    boot_params->hdr.ramdisk_size = 0x0;
+    boot_params->hdr.ext_loader_ver = 0x0;
+    boot_params->hdr.ext_loader_type = 0x0;
+
+    boot_params->hdr.loadflags |= CAN_USE_HEAP | LOADED_HIGH | KEEP_SEGMENTS;
+    boot_params->hdr.heap_end_ptr =
+        0xe000 - 0x200; // We assume protocol version >= 0x202
+    boot_params->hdr.cmd_line_ptr =
+        REAL_MODE_ADDR + boot_params->hdr.heap_end_ptr;
+}
+
+static void load_image_into_memory(vm_t *vm,
+                                   struct boot_params *boot_params,
                                    char *image,
                                    size_t image_size)
 {
-    size_t sectors = hdr->setup_sects;
+    char *kernel = memory_get_ptr(vm, KERNEL_ADDR);
 
-    if (sectors == 0)
+    if (kernel == NULL)
     {
-        sectors = 4;
+        errx(1, "Failed to get kernel ptr from VM");
     }
 
-    size_t setup_size = (sectors + 1) * 512;
+    size_t setup_sectors = boot_params->hdr.setup_sects;
 
+    if (setup_sectors < 4)
+    {
+        setup_sectors = 4;
+    }
+
+    size_t setup_size = (setup_sectors + 1) * 512;
     size_t kernel_size = image_size - setup_size;
 
-    memory_write(vm, REAL_MODE_LOAD_ADDR, (unsigned char *)image, setup_size);
-    memory_write(
-        vm, KERNEL_ADDR, (unsigned char *)image + setup_size, kernel_size);
+    // Copy the kernel
+    memcpy(kernel, image + setup_size, kernel_size);
 }
 
 static void load_linux(vm_t *vm, char *image, size_t image_size)
 {
-    (void)vm;
-    struct boot_params *boot_params = malloc(sizeof(struct boot_params));
+    struct boot_params *boot_params = memory_get_ptr(vm, BOOT_PARAMS_ADDR);
 
-    memset(boot_params, 0x0, sizeof(struct boot_params));
+    if (boot_params == NULL)
+    {
+        errx(1, "Failed to get boot_params ptr from VM");
+    }
 
-    // Copy the setup header
-    memcpy(&boot_params->hdr, image + 0x1F1, sizeof(struct setup_header));
+    memset(boot_params, 0, sizeof(struct boot_params));
+    memcpy(boot_params, image, sizeof(struct boot_params));
 
-    setup_header(&boot_params->hdr);
+    set_setup_header(boot_params);
     setup_e820(vm, boot_params);
 
-    copy_image_into_memory(vm, &boot_params->hdr, image, image_size);
+    // Now let's copy the cmd line into the vm memory
+    char *cmdline = memory_get_ptr(vm, boot_params->hdr.cmd_line_ptr);
 
-    printf("sentinel %x\n", boot_params->sentinel);
-    printf("code32_start 0x%x", boot_params->hdr.code32_start);
+    if (cmdline == NULL)
+    {
+        errx(1, "Failed to get cmdline ptr from VM");
+    }
 
-    free(boot_params);
+    memset(cmdline, 0, boot_params->hdr.cmdline_size);
+    memcpy(cmdline, CMD_LINE, strlen(CMD_LINE));
+
+    load_image_into_memory(vm, boot_params, image, image_size);
+
+    struct kvm_regs regs;
+
+    if (vm_get_regs(vm, &regs) != 1)
+    {
+        errx(1, "Failed to get regs");
+    }
+
+    regs.rsi = BOOT_PARAMS_ADDR;
+    regs.rip = boot_params->hdr.code32_start;
+
+    if (vm_set_regs(vm, &regs) != 1)
+    {
+        errx(1, "Failed to set regs");
+    }
+}
+
+static void *serial_thread(void *param)
+{
+    printf("Thread started\n");
+    serial_t *serial = (serial_t *)param;
+    unsigned char buffer[1024];
+
+    for (;;)
+    {
+        int r = (int)serial_read(serial, buffer, 1024);
+
+        printf("%.*s", r, buffer);
+    }
+
+    return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -145,7 +192,10 @@ int main(int argc, char *argv[])
         errx(1, "Failed to fstat");
     }
 
-    char *map = mmap(0x0, stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    char *map =
+        mmap(0x0, stat.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+    close(fd);
 
     if (map == MAP_FAILED)
     {
@@ -153,6 +203,26 @@ int main(int argc, char *argv[])
     }
 
     load_linux(vm, map, stat.st_size);
+
+    serial_t *serial = serial_new(COM1, 1024);
+
+    if (serial == NULL)
+    {
+        errx(1, "Failed to create serial");
+    }
+
+    pthread_t pthread;
+
+    pthread_create(&pthread, NULL, serial_thread, serial);
+
+    sleep(1);
+
+    printf("Running the VM\n");
+
+    if (vm_run(vm) == 0)
+    {
+        errx(1, "Failed to run VM");
+    }
 
     vm_destroy(vm);
 

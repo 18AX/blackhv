@@ -1,6 +1,6 @@
 CC?=gcc
-CFLAGS+=-Wall -Werror -Wextra -pedantic -I../include/
-LFLAGS=-lasan -L../build/ -lblackhv
+CFLAGS+=-Wall  -Wextra -pedantic -I../include/
+LFLAGS=-lasan -lpthread -L../build/ -lblackhv
 
 BUILD_DIR=build
 
