@@ -75,7 +75,28 @@ static void setup_e820(vm_t *vm, struct boot_params *params)
     e820_table_free(table);
 }
 
-static void load_linux(vm_t *vm, char *image)
+static void copy_image_into_memory(vm_t *vm,
+                                   struct setup_header *hdr,
+                                   char *image,
+                                   size_t image_size)
+{
+    size_t sectors = hdr->setup_sects;
+
+    if (sectors == 0)
+    {
+        sectors = 4;
+    }
+
+    size_t setup_size = (sectors + 1) * 512;
+
+    size_t kernel_size = image_size - setup_size;
+
+    memory_write(vm, REAL_MODE_LOAD_ADDR, (unsigned char *)image, setup_size);
+    memory_write(
+        vm, KERNEL_ADDR, (unsigned char *)image + setup_size, kernel_size);
+}
+
+static void load_linux(vm_t *vm, char *image, size_t image_size)
 {
     (void)vm;
     struct boot_params *boot_params = malloc(sizeof(struct boot_params));
@@ -87,6 +108,8 @@ static void load_linux(vm_t *vm, char *image)
 
     setup_header(&boot_params->hdr);
     setup_e820(vm, boot_params);
+
+    copy_image_into_memory(vm, &boot_params->hdr, image, image_size);
 
     printf("sentinel %x\n", boot_params->sentinel);
     printf("code32_start 0x%x", boot_params->hdr.code32_start);
@@ -129,7 +152,7 @@ int main(int argc, char *argv[])
         errx(1, "mmap failed");
     }
 
-    load_linux(vm, map);
+    load_linux(vm, map, stat.st_size);
 
     vm_destroy(vm);
 
