@@ -55,6 +55,8 @@ s32 vm_vcpu_init_state(vm_t *vm,
 
 s32 vm_set_regs(vm_t *vm, struct kvm_regs *regs);
 
+s32 vm_get_regs(vm_t *vm, struct kvm_regs *regs);
+
 /**
  * Run the virtual memory
  *
