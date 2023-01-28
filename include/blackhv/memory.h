@@ -65,6 +65,8 @@ s32 memory_alloc(vm_t *vm, u64 phys_addr, u64 size, u32 type);
  */
 s64 memory_write(vm_t *vm, u64 dest, u8 *buffer, u64 size);
 
+void *memory_get_ptr(vm_t *vm, u64 addr);
+
 /**
  * Get e820 table of a vm.
  *
