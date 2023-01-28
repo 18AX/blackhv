@@ -12,7 +12,7 @@
 #include <sys/types.h>
 
 #define BOOT_PARAMS_ADDR 0x10000
-#define CMD_LINE_ADDR 0x20000
+#define REAL_MODE_LOAD_ADDR 0x90000
 #define KERNEL_ADDR 0x100000
 
 static vm_t *init_vm()
@@ -38,6 +38,43 @@ static vm_t *init_vm()
     return vm;
 }
 
+static void setup_header(struct setup_header *hdr)
+{
+    hdr->boot_flag |= CAN_USE_HEAP | LOADED_HIGH;
+
+    // For now we dont load a ramdisk
+    hdr->ramdisk_image = 0;
+    hdr->ram_size = 0;
+
+    hdr->heap_end_ptr = 0xe000 - 0x200; // We assume that protocol >= 0x202
+    hdr->cmd_line_ptr = REAL_MODE_LOAD_ADDR + hdr->heap_end_ptr;
+
+    hdr->type_of_loader = 0xFF;
+    hdr->ext_loader_type = 0;
+    hdr->ext_loader_ver = 0;
+}
+
+static void setup_e820(vm_t *vm, struct boot_params *params)
+{
+    struct e820_table *table = e820_table_get(vm);
+
+    if (table == NULL)
+    {
+        errx(1, "failed to get e820 table");
+    }
+
+    for (size_t i = 0; i < table->length; ++i)
+    {
+        params->e820_table[i].addr = table->entries[i].base_address;
+        params->e820_table[i].size = table->entries[i].size;
+        params->e820_table[i].type = table->entries[i].type;
+    }
+
+    params->e820_entries = table->length;
+
+    e820_table_free(table);
+}
+
 static void load_linux(vm_t *vm, char *image)
 {
     (void)vm;
@@ -48,12 +85,11 @@ static void load_linux(vm_t *vm, char *image)
     // Copy the setup header
     memcpy(&boot_params->hdr, image + 0x1F1, sizeof(struct setup_header));
 
-    boot_params->hdr.boot_flag |= CAN_USE_HEAP | KEEP_SEGMENTS;
-    boot_params->hdr.heap_end_ptr = 0xFE00;
-    boot_params->hdr.cmd_line_ptr = 0x20000;
-    boot_params->hdr.type_of_loader = 0xFF;
+    setup_header(&boot_params->hdr);
+    setup_e820(vm, boot_params);
 
     printf("sentinel %x\n", boot_params->sentinel);
+    printf("code32_start 0x%x", boot_params->hdr.code32_start);
 
     free(boot_params);
 }
