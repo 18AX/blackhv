@@ -167,7 +167,7 @@ void *memory_get_ptr(vm_t *vm, u64 addr)
 {
     struct memory_entry *entry = find_entry(vm, addr);
 
-    if (entry == NULL)
+    if (entry == NULL || entry->type != MEMORY_USABLE)
     {
         return 0x0;
     }

@@ -21,6 +21,7 @@ void io_handle_outb(u16 port, u8 data)
         handlers[port].outb_handler(port, data, handlers[port].params);
     }
 }
+
 s32 io_handle_inb(u16 port, u8 *output)
 {
     if (handlers[port].inb_handler != NULL)
