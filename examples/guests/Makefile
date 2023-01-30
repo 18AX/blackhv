@@ -7,13 +7,16 @@ OBJECT32=guest32.c.o
 
 .PHONY: all clean
 
-all: guest16.bin guest32.bin
+all: guest16.bin guest32.bin example
 
 guest16.bin: $(OBJECT16)
 	ld $(LFLAGS) $(OBJECT16) -o guest16.bin
 
 guest32.bin: $(OBJECT32)
 	ld  $(LFLAGS) $(OBJECT32) -o guest32.bin
+
+example: main.c
+	$(CC) main.c -I../../include/ -o example -lpthread -L../../build/ -lblackhv -lasan
 
 %.c.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -23,4 +26,4 @@ guest32.bin: $(OBJECT32)
 
 
 clean:
-	$(RM) $(OBJECT16) $(OBJECT32) guest16.bin guest32.bin
+	$(RM) $(OBJECT16) $(OBJECT32) guest16.bin guest32.bin *.o example
