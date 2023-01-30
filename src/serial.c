@@ -74,7 +74,7 @@ static u8 serial_inb(u16 port, void *params)
         return line_status;
     }
     default:
-        fprintf(stderr, "serial: register not supperted yet %x", port);
+        fprintf(stderr, "serial: register not supported yet %x", port);
     }
 
     // Unreachable
