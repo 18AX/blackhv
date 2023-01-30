@@ -255,8 +255,6 @@ s32 vm_run(vm_t *vm)
         switch (vm->kvm_run->exit_reason)
         {
         case KVM_EXIT_IO: {
-            // printf("IO %x\n", vm->kvm_run->io.port);
-            // vm_dump_regs(vm);
             if (vm->kvm_run->io.direction == KVM_EXIT_IO_OUT)
             {
                 u8 *tmp = (u8 *)vm->kvm_run;
