@@ -115,7 +115,6 @@ int main(int argc, const char *argv[])
     }
 
     s32 init = vm_vcpu_init_state(vm,
-                                  START_ADDRESS,
                                   0xffffd000,
                                   0xffffc000,
                                   PROTECTED_MODE | CREATE_IRQCHIP | CREATE_PIT);
@@ -166,6 +165,15 @@ int main(int argc, const char *argv[])
     {
         errx(1, "Failed to register a mmio region");
     }
+
+    struct kvm_regs regs;
+
+    vm_get_regs(vm, &regs);
+
+    regs.rip = START_ADDRESS;
+    regs.rflags = (1 << 1);
+
+    vm_set_regs(vm, &regs);
 
     printf("Launching the VM\n");
 

@@ -22,13 +22,14 @@ void io_handle_outb(u16 port, u8 data)
     }
 }
 
-u8 io_handle_inb(u16 port)
+s32 io_handle_inb(u16 port, u8 *output)
 {
     if (handlers[port].inb_handler != NULL)
     {
-        return handlers[port].inb_handler(port, handlers[port].params);
+        *output = handlers[port].inb_handler(port, handlers[port].params);
+        return 1;
     }
 
     // TODO: handle this correctly
-    return 0xFF;
+    return 0;
 }

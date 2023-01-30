@@ -22,6 +22,7 @@ static void write_data(serial_t *serial, u8 data)
     queue_write(serial->guest_queue, &data, 1);
 }
 
+#include <stdio.h>
 static void serial_outb(u16 port, u8 data, void *params)
 {
     if (params == NULL)
@@ -39,7 +40,7 @@ static void serial_outb(u16 port, u8 data, void *params)
         write_data(serial, data);
         break;
     default:
-        errx(1, "serial: register not supported yet %u", port);
+        fprintf(stderr, "serial: register not supported yet %x", port);
         break;
     }
 }
@@ -73,7 +74,7 @@ static u8 serial_inb(u16 port, void *params)
         return line_status;
     }
     default:
-        errx(1, "serial: register not supperted yet %u", port);
+        fprintf(stderr, "serial: register not supported yet %x", port);
     }
 
     // Unreachable
