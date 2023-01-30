@@ -133,12 +133,12 @@ static s32 set_protected_mode(vm_t *vm)
 
 s32 vm_set_regs(vm_t *vm, struct kvm_regs *regs)
 {
-    return ioctl(vm->vcpu_fd, KVM_SET_REGS, regs) == 0;
+    return regs != NULL && ioctl(vm->vcpu_fd, KVM_SET_REGS, regs) == 0;
 }
 
 s32 vm_get_regs(vm_t *vm, struct kvm_regs *regs)
 {
-    return ioctl(vm->vcpu_fd, KVM_GET_REGS, regs) == 0;
+    return regs != NULL && ioctl(vm->vcpu_fd, KVM_GET_REGS, regs) == 0;
 }
 
 struct mycpuid
