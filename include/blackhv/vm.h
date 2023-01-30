@@ -48,7 +48,6 @@ void vm_destroy(vm_t *vm);
  * @param flags intialization flags
  */
 s32 vm_vcpu_init_state(vm_t *vm,
-                       u64 code_addr,
                        u64 tss_address,
                        u64 identity_map_address,
                        u32 flags);

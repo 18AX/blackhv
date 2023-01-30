@@ -29,7 +29,6 @@ static vm_t *init_vm()
 
     // start address is updated later
     if (vm_vcpu_init_state(vm,
-                           0x0,
                            0xffffd000,
                            0xffffc000,
                            PROTECTED_MODE | CREATE_IRQCHIP | CREATE_PIT)

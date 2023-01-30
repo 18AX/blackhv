@@ -69,7 +69,7 @@ void vm_destroy(vm_t *vm)
     free(vm);
 }
 
-static s32 set_real_mode(vm_t *vm, u64 code_addr)
+static s32 set_real_mode(vm_t *vm)
 {
     struct kvm_sregs sregs;
     if (ioctl(vm->vcpu_fd, KVM_GET_SREGS, &sregs) < 0)
@@ -80,31 +80,11 @@ static s32 set_real_mode(vm_t *vm, u64 code_addr)
     sregs.cs.selector = 0;
     sregs.cs.base = 0;
 
-    if (ioctl(vm->vcpu_fd, KVM_SET_SREGS, &sregs) < 0)
-    {
-        return -1;
-    }
-
-    struct kvm_regs regs;
-
-    memset(&regs, 0, sizeof(regs));
-    regs.rflags = 2;
-    regs.rip = code_addr;
-
-    if (ioctl(vm->vcpu_fd, KVM_SET_REGS, &regs) < 0)
-    {
-        return -1;
-    }
-
     return 0;
 }
 
-static s32 set_protected_mode(vm_t *vm, u64 code_addr)
+static s32 set_protected_mode(vm_t *vm)
 {
-    (void)vm;
-    (void)code_addr;
-    // Not implemented yet
-
     struct kvm_sregs sregs;
 
     if (ioctl(vm->vcpu_fd, KVM_GET_SREGS, &sregs) < 0)
@@ -192,7 +172,6 @@ static s32 setup_cpuid(vm_t *vm)
 }
 
 s32 vm_vcpu_init_state(vm_t *vm,
-                       u64 code_addr,
                        u64 tss_address,
                        u64 identity_map_addr,
                        u32 mode)
@@ -247,11 +226,11 @@ s32 vm_vcpu_init_state(vm_t *vm,
 
     if ((mode & REAL_MODE) != 0)
     {
-        return set_real_mode(vm, code_addr);
+        return set_real_mode(vm);
     }
     else if ((mode & PROTECTED_MODE) != 0)
     {
-        return set_protected_mode(vm, code_addr);
+        return set_protected_mode(vm);
     }
 
     return 1;
