@@ -1,6 +1,8 @@
 #ifndef SCREEN_HEADER
 #define SCREEN_HEADER
 
+#include <blackhv/types.h>
+
 typedef struct vm vm_t;
 typedef struct screen screen_t;
 
