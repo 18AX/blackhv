@@ -186,6 +186,18 @@ s64 memory_read(vm_t *vm, u64 src_phys, u8 *buffer, u64 size)
     return (s64)read;
 }
 
+void *memory_get_ptr(vm_t *vm, u64 addr)
+{
+    struct memory_entry *entry = find_entry(vm, addr);
+
+    if (entry == NULL || entry->type != MEMORY_USABLE)
+    {
+        return 0x0;
+    }
+
+    return ((u8 *)entry->memory_ptr) + addr;
+}
+
 struct e820_table *e820_table_get(vm_t *vm)
 {
     struct e820_table *table = malloc(sizeof(struct e820_table));

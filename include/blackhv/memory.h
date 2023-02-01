@@ -5,6 +5,10 @@
 #include <blackhv/types.h>
 #include <blackhv/vm.h>
 
+#define KB_1 (1 << 10)
+#define MB_1 (1 << 20)
+#define GB_1 (1 << 30)
+
 #define MEMORY_USABLE 0x1
 #define MEMORY_MMIO 0x2
 #define MEMORY_FRAMEBUFFER 0x3
@@ -62,6 +66,8 @@ s32 memory_alloc(vm_t *vm, u64 phys_addr, u64 size, u32 type);
  * @param size size in bytes
  */
 s64 memory_write(vm_t *vm, u64 dest, u8 *buffer, u64 size);
+
+void *memory_get_ptr(vm_t *vm, u64 addr);
 
 /**
  * Read from guest memory area

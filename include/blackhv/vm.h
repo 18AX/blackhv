@@ -7,8 +7,6 @@
 #include <blackhv/types.h>
 #include <linux/kvm.h>
 
-#define MB_1 1048576
-
 typedef struct memory memory_t;
 
 typedef struct vm
@@ -51,10 +49,13 @@ void vm_destroy(vm_t *vm);
  * @param flags intialization flags
  */
 s32 vm_vcpu_init_state(vm_t *vm,
-                       u64 code_addr,
                        u64 tss_address,
                        u64 identity_map_address,
                        u32 flags);
+
+s32 vm_set_regs(vm_t *vm, struct kvm_regs *regs);
+
+s32 vm_get_regs(vm_t *vm, struct kvm_regs *regs);
 
 /**
  * Run the virtual memory

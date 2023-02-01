@@ -14,9 +14,16 @@ sudo apt-get install libsdl2-2.0-0 libsdl2-dev libsdl2-image-2.0-0 libsdl2-image
 
 ```sh
 make # build the libblackhv in the build directory
-make example # build the example in the build directory
-make tests # Run unit tests
 ```
+
+To build examples
+
+```
+cd examples/<example_name>
+make
+```
+
+If you do not want to compile your own linux image, you can find one here https://gist.github.com/zserge/ae9098a75b2b83a1299d19b79b5fe488.
 
 ## Documention
 

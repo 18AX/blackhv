@@ -35,8 +35,5 @@ tests: $(TARGET) $(BUILD_DIR)/tests.o
 	$(CC) $(BUILD_DIR)/tests.o -o $(BUILD_DIR)/tests $(LFLAGS) -lcriterion
 	./$(BUILD_DIR)/tests --verbose
 
-example: $(TARGET) $(BUILD_DIR)/main.o
-	$(CC) $(BUILD_DIR)/main.o -o $(BUILD_DIR)/example $(LFLAGS)
-
 clean:
 	$(RM) -rf $(BUILD_DIR)

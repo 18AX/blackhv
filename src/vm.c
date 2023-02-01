@@ -5,6 +5,8 @@
 #include <err.h>
 #include <fcntl.h>
 #include <linux/kvm.h>
+#include <linux/kvm_para.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -68,7 +70,7 @@ void vm_destroy(vm_t *vm)
     free(vm);
 }
 
-static s32 set_real_mode(vm_t *vm, u64 code_addr)
+static s32 set_real_mode(vm_t *vm)
 {
     struct kvm_sregs sregs;
     if (ioctl(vm->vcpu_fd, KVM_GET_SREGS, &sregs) < 0)
@@ -79,31 +81,11 @@ static s32 set_real_mode(vm_t *vm, u64 code_addr)
     sregs.cs.selector = 0;
     sregs.cs.base = 0;
 
-    if (ioctl(vm->vcpu_fd, KVM_SET_SREGS, &sregs) < 0)
-    {
-        return -1;
-    }
-
-    struct kvm_regs regs;
-
-    memset(&regs, 0, sizeof(regs));
-    regs.rflags = 2;
-    regs.rip = code_addr;
-
-    if (ioctl(vm->vcpu_fd, KVM_SET_REGS, &regs) < 0)
-    {
-        return -1;
-    }
-
     return 0;
 }
 
-static s32 set_protected_mode(vm_t *vm, u64 code_addr)
+static s32 set_protected_mode(vm_t *vm)
 {
-    (void)vm;
-    (void)code_addr;
-    // Not implemented yet
-
     struct kvm_sregs sregs;
 
     if (ioctl(vm->vcpu_fd, KVM_GET_SREGS, &sregs) < 0)
@@ -147,28 +129,50 @@ static s32 set_protected_mode(vm_t *vm, u64 code_addr)
     sregs.fs = data;
     sregs.gs = data;
 
-    if (ioctl(vm->vcpu_fd, KVM_SET_SREGS, &sregs) < 0)
-    {
-        return 0;
-    }
-
-    struct kvm_regs regs;
-
-    memset(&regs, 0, sizeof(regs));
-    regs.rflags = 2;
-    regs.rip = code_addr;
-
-    if (ioctl(vm->vcpu_fd, KVM_SET_REGS, &regs) < 0)
-    {
-        return 0;
-    }
-
-    return 1;
+    return ioctl(vm->vcpu_fd, KVM_SET_SREGS, &sregs) == 0;
 }
 
-#include <stdio.h>
+s32 vm_set_regs(vm_t *vm, struct kvm_regs *regs)
+{
+    return regs != NULL && ioctl(vm->vcpu_fd, KVM_SET_REGS, regs) == 0;
+}
+
+s32 vm_get_regs(vm_t *vm, struct kvm_regs *regs)
+{
+    return regs != NULL && ioctl(vm->vcpu_fd, KVM_GET_REGS, regs) == 0;
+}
+
+struct mycpuid
+{
+    u32 nent;
+    u32 padding;
+    struct kvm_cpuid_entry2 entries[128];
+};
+
+static s32 setup_cpuid(vm_t *vm)
+{
+    struct mycpuid cpuid = { .nent = 128, .padding = 0 };
+
+    if (ioctl(vm->kvm_fd, KVM_GET_SUPPORTED_CPUID, &cpuid) != 0)
+    {
+        return 0;
+    }
+
+    for (size_t i = 0; i < cpuid.nent; ++i)
+    {
+        if (cpuid.entries[i].function == KVM_CPUID_SIGNATURE)
+        {
+            cpuid.entries[i].eax = KVM_CPUID_FEATURES;
+            cpuid.entries[i].ebx = 0x4b4d564b;
+            cpuid.entries[i].ecx = 0x564b4d56;
+            cpuid.entries[i].edx = 0x4d;
+        }
+    }
+
+    return ioctl(vm->vcpu_fd, KVM_SET_CPUID2, &cpuid);
+}
+
 s32 vm_vcpu_init_state(vm_t *vm,
-                       u64 code_addr,
                        u64 tss_address,
                        u64 identity_map_addr,
                        u32 mode)
@@ -177,7 +181,6 @@ s32 vm_vcpu_init_state(vm_t *vm,
         || ioctl(vm->vm_fd, KVM_SET_IDENTITY_MAP_ADDR, &identity_map_addr, 0)
             < 0)
     {
-        printf("JERE\n");
         return 0;
     }
 
@@ -189,7 +192,7 @@ s32 vm_vcpu_init_state(vm_t *vm,
 
     if ((mode & CREATE_PIT) != 0)
     {
-        struct kvm_pit_config pit_config = { 0 };
+        struct kvm_pit_config pit_config = { .flags = 0 };
 
         if (ioctl(vm->vm_fd, KVM_CREATE_PIT2, &pit_config, 0) < 0)
         {
@@ -211,24 +214,28 @@ s32 vm_vcpu_init_state(vm_t *vm,
 
     vm->kvm_run = mmap(
         NULL, vcpu_size, PROT_READ | PROT_WRITE, MAP_SHARED, vm->vcpu_fd, 0);
+
     if (vm->kvm_run == MAP_FAILED)
+    {
+        return 0;
+    }
+
+    if (setup_cpuid(vm) < 0)
     {
         return 0;
     }
 
     if ((mode & REAL_MODE) != 0)
     {
-        return set_real_mode(vm, code_addr);
+        return set_real_mode(vm);
     }
     else if ((mode & PROTECTED_MODE) != 0)
     {
-        return set_protected_mode(vm, code_addr);
+        return set_protected_mode(vm);
     }
 
     return 1;
 }
-
-#include <stdio.h>
 
 s32 vm_run(vm_t *vm)
 {
@@ -242,10 +249,9 @@ s32 vm_run(vm_t *vm)
         // Run again the VM at each VM exit
         if (ioctl(vm->vcpu_fd, KVM_RUN, 0) == -1)
         {
-            printf("Failed to run\n");
+            fprintf(stderr, "Failed to VM\n");
             return 0;
         }
-
         // For now on ly check IO exit
         switch (vm->kvm_run->exit_reason)
         {
@@ -266,8 +272,12 @@ s32 vm_run(vm_t *vm)
 
                 if (vm->kvm_run->io.size == 1)
                 {
-                    *(tmp + vm->kvm_run->io.data_offset) =
-                        io_handle_inb(vm->kvm_run->io.port);
+                    if (io_handle_inb(vm->kvm_run->io.port,
+                                      tmp + vm->kvm_run->io.data_offset)
+                        == 0)
+                    {
+                        fprintf(stderr, "Not supported port\n");
+                    }
                 }
             }
             break;
@@ -289,7 +299,8 @@ s32 vm_run(vm_t *vm)
             break;
         }
         default:
-            printf("Unknown vm exit %d\n", vm->kvm_run->exit_reason);
+            fprintf(stderr, "Unknown vm exit %d\n", vm->kvm_run->exit_reason);
+            return 0;
         }
     }
 

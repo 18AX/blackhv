@@ -7,6 +7,8 @@ The main component for interacting with a virtual machine. The object `vm_t` is 
 - [vm_new](#vm_new)
 - [vm_destroy](#vm_destroy)
 - [vm_vcpu_set_state](#vm_vcpu_set_state)
+- [vm_get_regs](#vm_get_regs)
+- [vm_set_regs](#vm_set_regs)
 - [vm_run](#vm_run)
 
 ### vm_new
@@ -31,13 +33,12 @@ Destroy and free all the resources related to the vm object.
 
 ```c
 s32 vm_vcpu_init_state(vm_t *vm,
-                       u64 code_addr,
                        u64 tss_address,
                        u64 identity_map_address,
                        u32 flags);
 ```
 
-Initialize the state of a virtual CPU. The `code_addr` is the address set in the instruction pointer register. The `tss_address` **must be not** conflicting with a mmio memory area or a memory slot. Same for `identity_map_address`.
+Initialize the state of a virtual CPU. The `tss_address` **must be not** conflicting with a mmio memory area or a memory slot. Same for `identity_map_address`.
 
 The list of possiblie flags:
 - REAL_MODE
@@ -50,11 +51,27 @@ The list of possiblie flags:
 #### Example
 
 ```c
-if (vm_vcpu_set_state(vm, START_ADDRESS, PROTECTED_MODE) != 1)
+if (vm_vcpu_set_state(vm, 0xffffd000, 0xffffc000,PROTECTED_MODE) != 1)
 {
     errx(1, "Failed to initialize virtual cpu");
 }
 ```
+
+### vm_get_regs
+
+```c
+s32 vm_get_regs(vm_t *vm, struct kvm_regs *regs);
+```
+
+Get the current state of the VM registers.
+
+### vm_set_regs
+
+```c
+s32 vm_set_regs(vm_t *vm, struct kvm_regs *regs);
+```
+
+Set the current state of the VM registers.
 
 ### vm_run
 
@@ -81,6 +98,7 @@ if (vm_run(vm) != 1)
 This header provides some functions to manage virtual machine memory.
 
 - [memory_alloc](#memory_alloc)
+- [memory_get_ptr](#memory_get_ptr)
 - [memory_read](#memory_read)
 - [memory_write](#memory_write)
 - [e820_table_get](#e820_table_get)
@@ -108,6 +126,29 @@ if (memory_alloc(vm, 0x0, MB_1, MEMORY_USABLE) == 0)
 {
     errx(1, "Failed to allocate 1 Mb of memory");
 }
+```
+
+### memory_get_ptr
+
+```c
+void *memory_get_ptr(vm_t *vm, u64 addr);
+```
+
+Get a readable and writable pointer from the guest memory.
+
+#### Example
+
+```c
+vm_t *vm = vm_new();
+
+char *binary = memory_get_ptr(vm, 0x7C00);
+
+if (binary == NULL)
+{
+    errx(1, "Memory not in range");
+}
+
+memcpy(binary, my_super_binary, len);
 ```
 
 ### memory_write
