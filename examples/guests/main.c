@@ -187,6 +187,12 @@ int main(int argc, const char *argv[])
 
     dump_e820_table(vm);
 
+    screen_init(vm, 0xC2000000);
+    pthread_t th2;
+    pthread_create(&th2, NULL, screen_run, (void *)vm);
+
+    printf("VESA initialized\n");
+
     sleep(1);
 
     if (vm_run(vm) != 1)
@@ -196,7 +202,9 @@ int main(int argc, const char *argv[])
 
     pthread_join(th0, NULL);
     pthread_join(th1, NULL);
+    pthread_join(th2, NULL);
 
+    screen_uninit(vm);
     vm_destroy(vm);
 
     return 0;

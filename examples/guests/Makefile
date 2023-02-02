@@ -1,5 +1,8 @@
 CC=gcc
 CFLAGS=-m32 -fno-pie -nostdinc -nostdlib -ffreestanding -mno-red-zone -std=gnu99 -Wall -pedantic -Werror -Wextra
+
+SDL_LDFLAGS=`sdl2-config --libs`
+
 LFLAGS=-m elf_i386 -nostdlib -T guest.ld
 
 OBJECT16=guest16.S.o
@@ -16,7 +19,7 @@ guest32.bin: $(OBJECT32)
 	ld  $(LFLAGS) $(OBJECT32) -o guest32.bin
 
 example: main.c
-	$(CC) main.c -I../../include/ -o example -lpthread -L../../build/ -lblackhv -lasan
+	$(CC) main.c -I../../include/ -o example -lpthread -L../../build/ -lblackhv -lasan  $(SDL_LDFLAGS)
 
 %.c.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

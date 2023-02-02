@@ -2,8 +2,12 @@ BUILD_DIR=build
 SRC_DIR=src
 
 CC=gcc
-CFLAGS+=-g3 -Wall -Werror -Wextra -pedantic -Iinclude/
-LFLAGS=-lasan -L./$(BUILD_DIR) -lblackhv
+
+SDL_CFLAGS=`sdl2-config --cflags`
+SDL_LDFLAGS=`sdl2-config --libs`
+
+CFLAGS+=-g3 -Wall -Werror -Wextra -pedantic $(SDL_CFLAGS) -Iinclude/
+LFLAGS=-lasan -L./$(BUILD_DIR) -lblackhv $(SDL_LDFLAGS)
 
 TARGET=$(BUILD_DIR)/libblackhv.a
 
@@ -16,6 +20,7 @@ OBJECTS=vm.o \
 		serial.o \
 		mmio.o \
 		memory.o \
+		screen.o \
 
 all: $(TARGET)
 

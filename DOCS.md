@@ -99,6 +99,7 @@ This header provides some functions to manage virtual machine memory.
 
 - [memory_alloc](#memory_alloc)
 - [memory_get_ptr](#memory_get_ptr)
+- [memory_read](#memory_read)
 - [memory_write](#memory_write)
 - [e820_table_get](#e820_table_get)
 - [e820_table_free](#e820_table_free)
@@ -159,6 +160,16 @@ s64 memory_write(vm_t *vm, u64 destination, u8 *buffer, u64 size);
 Write data to the guest memory. The destination is a physical memory address.
 
 **return**: the number of bytes written.
+
+### memory_read
+
+```c
+s64 memory_read(vm_t *vm, u64 src_phys, u8 *buffer, u64 size);
+```
+
+Read data from the guest memory. The source is a physical memory address.
+
+**return**: the number of bytes read.
 
 ### e820_table_get
 
@@ -369,3 +380,40 @@ void mmio_unregister(s32 id);
 ```
 
 Unregister a MMIO region. The ID corresponds to the ID given by `mmio_register`.
+
+## screen.h
+
+This header provides some functions to emulate a screen.
+
+- [screen_init](#screen_init)
+- [screen_run](#screen_run)
+- [screen_uninit](#screen_uninit)
+
+### screen_init
+
+```c
+s64 screen_init(vm_t *vm, u64 framebuffer_phys);
+```
+
+Initialize the screen component of a VM.
+`framebuffer_phys` contains the desired address for the framebuffer.
+A guest memory space will be allocated of size `FB_WIDTH * FB_HEIGHT * FB_BPP` (refer to *framebuffer.h*).
+
+Return `1` on success, `0` otherwise.
+
+### screen_run
+
+```c
+void *screen_run(void *params);
+```
+
+Blocking loop to handle screen events and refreshs. Should be used as a thread worker.
+`params` must be a valid `vm_t` pointer.
+
+### screen_uninit
+
+```c
+void screen_uninit(vm_t *vm);
+```
+
+Free memory used by a VM screen.

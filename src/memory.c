@@ -123,6 +123,7 @@ s32 memory_alloc(vm_t *vm, u64 phys_addr, u64 size, u32 type)
     struct memory_entry *entry = NULL;
     switch (type)
     {
+    case MEMORY_FRAMEBUFFER:
     case MEMORY_USABLE:
         entry = allocate_usable(vm, phys_addr, size);
         break;
@@ -161,6 +162,28 @@ s64 memory_write(vm_t *vm, u64 dest, u8 *buffer, u64 size)
     }
 
     return (s64)written;
+}
+
+s64 memory_read(vm_t *vm, u64 src_phys, u8 *buffer, u64 size)
+{
+    struct memory_entry *entry = find_entry(vm, src_phys);
+
+    if (entry == NULL
+        || (entry->type != MEMORY_USABLE && entry->type != MEMORY_FRAMEBUFFER))
+    {
+        return -1;
+    }
+
+    u64 base_address = src_phys - entry->guest_phys;
+    u64 mem_limit = entry->size - base_address;
+    u8 *ptr = (u8 *)entry->memory_ptr;
+    u64 read = 0;
+    for (; read < mem_limit && read < size; ++read)
+    {
+        buffer[read] = ptr[base_address + read];
+    }
+
+    return (s64)read;
 }
 
 void *memory_get_ptr(vm_t *vm, u64 addr)

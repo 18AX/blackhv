@@ -45,6 +45,7 @@ vm_t *vm_new()
     vm->kvm_fd = fd;
     vm->vm_fd = vm_fd;
     vm->mem = memory_new();
+    vm->screen = NULL;
 
     if (vm->mem == NULL)
     {
