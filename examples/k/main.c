@@ -18,6 +18,7 @@
 #define MULTIBOOT_GUEST 0xc10000
 #define CMDLINE "/bin/hunter"
 #define CMDLINE_GUEST 0xc20000
+#define MEMORY_GUEST 0xc30000
 
 static vm_t *init_vm()
 {
@@ -41,6 +42,37 @@ static vm_t *init_vm()
     return vm;
 }
 
+static void setup_e820(vm_t *vm, multiboot_info_t *info)
+{
+    struct e820_table *table = e820_table_get(vm);
+
+    info->mmap_addr = MEMORY_GUEST;
+    multiboot_memory_map_t *guest_memory = memory_get_ptr(vm, MEMORY_GUEST);
+    if (guest_memory == NULL)
+    {
+        errx(1, "Could not get MEMORY_GUEST pointer\n");
+    }
+
+    if (table == NULL)
+    {
+        errx(1, "failed to get e820 table");
+    }
+
+    for (size_t i = 0; i < table->length; ++i)
+    {
+        guest_memory[i].size = sizeof(multiboot_memory_map_t);
+        guest_memory[i].addr = table->entries[i].base_address;
+        guest_memory[i].len = table->entries[i].size;
+        guest_memory[i].type = table->entries[i].type;
+    }
+
+    info->mmap_length = table->length * sizeof(multiboot_memory_map_t);
+
+    info->mem_lower = 0x1000;
+
+    e820_table_free(table);
+}
+
 static void load_k(vm_t *vm, char *image, size_t image_size)
 {
     multiboot_info_t *multiboot =
@@ -51,6 +83,7 @@ static void load_k(vm_t *vm, char *image, size_t image_size)
     }
 
     memset(multiboot, 0, sizeof(multiboot_info_t));
+    setup_e820(vm, multiboot);
 
     char *cmdline = (char *)memory_get_ptr(vm, CMDLINE_GUEST);
     if (cmdline == NULL)
