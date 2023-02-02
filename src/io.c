@@ -36,3 +36,26 @@ s32 io_handle_inb(u16 port, u8 *output)
     // TODO: handle this correctly
     return 0;
 }
+
+s32 io_handle_outw(u16 port, u16 data)
+{
+    if (handlers[port].outw_handler != NULL)
+    {
+        handlers[port].outw_handler(port, data, handlers[port].params);
+        return 1;
+    }
+
+    return 0;
+}
+
+s32 io_handle_inw(u16 port, u16 *output)
+{
+    if (handlers[port].inw_handler != NULL)
+    {
+        *output = handlers[port].inw_handler(port, handlers[port].params);
+        return 1;
+    }
+
+    // TODO: handle this correctly
+    return 0;
+}

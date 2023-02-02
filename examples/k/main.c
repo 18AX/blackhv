@@ -1,3 +1,4 @@
+#include <blackhv/atapi.h>
 #include <blackhv/memory.h>
 #include <blackhv/serial.h>
 #include <blackhv/vm.h>
@@ -50,7 +51,7 @@ static void setup_e820(vm_t *vm, multiboot_info_t *info)
     multiboot_memory_map_t *guest_memory = memory_get_ptr(vm, MEMORY_GUEST);
     if (guest_memory == NULL)
     {
-        errx(1, "Could not get MEMORY_GUEST pointer\n");
+        errx(1, "Could not get MEMORY_GUEST pointer");
     }
 
     if (table == NULL)
@@ -79,7 +80,7 @@ static void load_k(vm_t *vm, char *image, size_t image_size)
         (multiboot_info_t *)memory_get_ptr(vm, MULTIBOOT_GUEST);
     if (multiboot == NULL)
     {
-        errx(1, "Could not get multiboot guest pointer\n");
+        errx(1, "Could not get multiboot guest pointer");
     }
 
     memset(multiboot, 0, sizeof(multiboot_info_t));
@@ -88,7 +89,7 @@ static void load_k(vm_t *vm, char *image, size_t image_size)
     char *cmdline = (char *)memory_get_ptr(vm, CMDLINE_GUEST);
     if (cmdline == NULL)
     {
-        errx(1, "Could not get cmdline guest pointer\n");
+        errx(1, "Could not get cmdline guest pointer");
     }
 
     strcpy(cmdline, CMDLINE);
@@ -103,7 +104,7 @@ static void load_k(vm_t *vm, char *image, size_t image_size)
             char *mem = memory_get_ptr(vm, program_headers[i].p_paddr);
             if (mem == NULL)
             {
-                errx(1, "Could not get program header guest pointer\n");
+                errx(1, "Could not get program header guest pointer");
             }
             memset(mem, 0, program_headers[i].p_memsz);
             memcpy(mem,
@@ -179,9 +180,9 @@ static void *serial_thread(void *param)
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
+    if (argc != 3)
     {
-        errx(1, "Usage: ./k_example /path/to/k.elf\n");
+        errx(1, "Usage: ./k_example /path/to/k.elf disk.iso");
     }
 
     vm_t *vm = init_vm();
@@ -207,6 +208,9 @@ int main(int argc, char **argv)
 
     pthread_create(&pthread, NULL, serial_thread, serial);
 
+    int disk_fd = open(argv[2], O_RDONLY);
+    atapi_init(vm, disk_fd);
+
     sleep(1);
 
     printf("Running the VM\n");
@@ -216,6 +220,7 @@ int main(int argc, char **argv)
         errx(1, "Failed to run VM");
     }
 
+    close(disk_fd);
     vm_destroy(vm);
 
     return 0;

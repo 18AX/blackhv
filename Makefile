@@ -21,6 +21,7 @@ OBJECTS=vm.o \
 		mmio.o \
 		memory.o \
 		screen.o \
+		atapi.o \
 
 all: $(TARGET)
 

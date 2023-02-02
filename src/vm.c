@@ -237,6 +237,62 @@ s32 vm_vcpu_init_state(vm_t *vm,
     return 1;
 }
 
+static void handle_exit_io(vm_t *vm)
+{
+    if (vm->kvm_run->io.direction == KVM_EXIT_IO_OUT)
+    {
+        u8 *tmp = (u8 *)vm->kvm_run;
+
+        if (vm->kvm_run->io.size == 1)
+        {
+            u8 data = *(tmp + vm->kvm_run->io.data_offset);
+            if (io_handle_outb(vm->kvm_run->io.port, data) == 0)
+            {
+                fprintf(stderr,
+                        "Outb to unsupported port: %x\n",
+                        vm->kvm_run->io.port);
+            }
+        }
+        else if (vm->kvm_run->io.size == 2)
+        {
+            u16 data = *(u16 *)(tmp + vm->kvm_run->io.data_offset);
+            if (io_handle_outw(vm->kvm_run->io.port, data) == 0)
+            {
+                fprintf(stderr,
+                        "Outw to unsupported port: %x\n",
+                        vm->kvm_run->io.port);
+            }
+        }
+    }
+    else if (vm->kvm_run->io.direction == KVM_EXIT_IO_IN)
+    {
+        u8 *tmp = (u8 *)vm->kvm_run;
+
+        if (vm->kvm_run->io.size == 1)
+        {
+            if (io_handle_inb(vm->kvm_run->io.port,
+                              tmp + vm->kvm_run->io.data_offset)
+                == 0)
+            {
+                fprintf(stderr,
+                        "Inb to unsupported port: %x\n",
+                        vm->kvm_run->io.port);
+            }
+        }
+        else if (vm->kvm_run->io.size == 2)
+        {
+            if (io_handle_inw(vm->kvm_run->io.port,
+                              (u16 *)(tmp + vm->kvm_run->io.data_offset))
+                == 0)
+            {
+                fprintf(stderr,
+                        "Inw to unsupported port: %x\n",
+                        vm->kvm_run->io.port);
+            }
+        }
+    }
+}
+
 s32 vm_run(vm_t *vm)
 {
     if (vm == NULL || vm->kvm_run == NULL)
@@ -255,40 +311,9 @@ s32 vm_run(vm_t *vm)
         // For now on ly check IO exit
         switch (vm->kvm_run->exit_reason)
         {
-        case KVM_EXIT_IO: {
-            if (vm->kvm_run->io.direction == KVM_EXIT_IO_OUT)
-            {
-                u8 *tmp = (u8 *)vm->kvm_run;
-
-                if (vm->kvm_run->io.size == 1)
-                {
-                    u8 data = *(tmp + vm->kvm_run->io.data_offset);
-                    if (io_handle_outb(vm->kvm_run->io.port, data) == 0)
-                    {
-                        fprintf(stderr,
-                                "Outb to unsupported port: %x\n",
-                                vm->kvm_run->io.port);
-                    }
-                }
-            }
-            else if (vm->kvm_run->io.direction == KVM_EXIT_IO_IN)
-            {
-                u8 *tmp = (u8 *)vm->kvm_run;
-
-                if (vm->kvm_run->io.size == 1)
-                {
-                    if (io_handle_inb(vm->kvm_run->io.port,
-                                      tmp + vm->kvm_run->io.data_offset)
-                        == 0)
-                    {
-                        fprintf(stderr,
-                                "Inb to unsupported port: %x\n",
-                                vm->kvm_run->io.port);
-                    }
-                }
-            }
+        case KVM_EXIT_IO:
+            handle_exit_io(vm);
             break;
-        }
         case KVM_EXIT_MMIO: {
             if (vm->kvm_run->mmio.is_write)
             {
