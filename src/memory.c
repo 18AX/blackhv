@@ -197,7 +197,7 @@ void *memory_get_ptr(vm_t *vm, u64 addr)
 
     u64 ptr = (u64)entry->memory_ptr;
 
-    return (void*) (ptr + (addr - entry->guest_phys));
+    return (void *)(ptr + (addr - entry->guest_phys));
 }
 
 struct e820_table *e820_table_get(vm_t *vm)

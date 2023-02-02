@@ -14,12 +14,15 @@ void io_unregister_handler(u16 port)
     memset(&handlers[port], 0x0, sizeof(struct handler));
 }
 
-void io_handle_outb(u16 port, u8 data)
+s32 io_handle_outb(u16 port, u8 data)
 {
     if (handlers[port].outb_handler != NULL)
     {
         handlers[port].outb_handler(port, data, handlers[port].params);
+        return 1;
     }
+
+    return 0;
 }
 
 s32 io_handle_inb(u16 port, u8 *output)

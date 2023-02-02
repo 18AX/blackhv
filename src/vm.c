@@ -263,7 +263,12 @@ s32 vm_run(vm_t *vm)
                 if (vm->kvm_run->io.size == 1)
                 {
                     u8 data = *(tmp + vm->kvm_run->io.data_offset);
-                    io_handle_outb(vm->kvm_run->io.port, data);
+                    if (io_handle_outb(vm->kvm_run->io.port, data) == 0)
+                    {
+                        fprintf(stderr,
+                                "Outb to unsupported port: %x\n",
+                                vm->kvm_run->io.port);
+                    }
                 }
             }
             else if (vm->kvm_run->io.direction == KVM_EXIT_IO_IN)
@@ -276,7 +281,9 @@ s32 vm_run(vm_t *vm)
                                       tmp + vm->kvm_run->io.data_offset)
                         == 0)
                     {
-                        fprintf(stderr, "Not supported port\n");
+                        fprintf(stderr,
+                                "Inb to unsupported port: %x\n",
+                                vm->kvm_run->io.port);
                     }
                 }
             }

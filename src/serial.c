@@ -40,7 +40,7 @@ static void serial_outb(u16 port, u8 data, void *params)
         write_data(serial, data);
         break;
     default:
-        fprintf(stderr, "serial: register not supported yet %x", port);
+        fprintf(stderr, "serial: register not supported yet %x\n", port);
         break;
     }
 }
@@ -74,7 +74,7 @@ static u8 serial_inb(u16 port, void *params)
         return line_status;
     }
     default:
-        fprintf(stderr, "serial: register not supported yet %x", port);
+        fprintf(stderr, "serial: register not supported yet %x\n", port);
     }
 
     // Unreachable

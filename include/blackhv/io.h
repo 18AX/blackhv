@@ -14,7 +14,7 @@ void io_register_handler(u16 port, struct handler hdl);
 
 void io_unregister_handler(u16 port);
 
-void io_handle_outb(u16 port, u8 data);
+s32 io_handle_outb(u16 port, u8 data);
 
 s32 io_handle_inb(u16 port, u8 *output);
 
