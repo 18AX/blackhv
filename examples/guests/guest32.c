@@ -710,8 +710,8 @@ unsigned char splash[SPLASH_WIDTH * SPLASH_HEIGHT] = {
     0x0,  0x0,  0x0,
 };
 
-#define GRAPHIC_WIDTH 640
-#define GRAPHIC_HEIGHT 400
+#define GRAPHIC_WIDTH 320
+#define GRAPHIC_HEIGHT 200
 
 #define STACK_SIZE 16384
 

@@ -89,4 +89,21 @@ struct e820_table *e820_table_get(vm_t *vm);
 
 void e820_table_free(struct e820_table *table);
 
+#define PAGE_SIZE 4096
+
+static inline u64 align_up(u64 ptr)
+{
+    return (ptr + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
+}
+
+static inline u64 align_down(u64 ptr)
+{
+    return ptr & ~(PAGE_SIZE - 1);
+}
+
+static inline u32 is_align(u64 ptr)
+{
+    return (ptr & (PAGE_SIZE - 1)) == 0;
+}
+
 #endif

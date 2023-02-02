@@ -39,11 +39,11 @@ s64 screen_init(vm_t *vm, u64 framebuffer_phys)
 {
     if (memory_alloc(vm,
                      framebuffer_phys,
-                     FB_WIDTH * FB_HEIGHT * FB_BPP,
+                     align_up(FB_WIDTH * FB_HEIGHT * FB_BPP),
                      MEMORY_FRAMEBUFFER)
         == 0)
     {
-        printf("Failed to allocate framebuffer memory.\n");
+        fprintf(stderr, "Failed to allocate framebuffer memory.\n");
         return 0;
     }
 

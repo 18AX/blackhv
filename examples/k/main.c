@@ -1,5 +1,6 @@
 #include <blackhv/atapi.h>
 #include <blackhv/memory.h>
+#include <blackhv/screen.h>
 #include <blackhv/serial.h>
 #include <blackhv/vm.h>
 #include <elf.h>
@@ -20,6 +21,7 @@
 #define CMDLINE "/bin/hunter"
 #define CMDLINE_GUEST 0xc20000
 #define MEMORY_GUEST 0xc30000
+#define FRAMEBUFFER_GUEST 0xC2000000
 
 static vm_t *init_vm()
 {
@@ -211,6 +213,12 @@ int main(int argc, char **argv)
     int disk_fd = open(argv[2], O_RDONLY);
     atapi_init(vm, disk_fd);
 
+    screen_init(vm, FRAMEBUFFER_GUEST);
+    pthread_t screen_th;
+    pthread_create(&screen_th, NULL, screen_run, (void *)vm);
+
+    printf("VESA initialized\n");
+
     sleep(1);
 
     printf("Running the VM\n");
@@ -221,6 +229,7 @@ int main(int argc, char **argv)
     }
 
     close(disk_fd);
+    screen_uninit(vm);
     vm_destroy(vm);
 
     return 0;

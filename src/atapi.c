@@ -114,7 +114,8 @@ static void handle_scsi_packet(int disk_fd)
     u32 lba = curr_pkt.lba_lo | (curr_pkt.lba_milo << 8)
         | (curr_pkt.lba_mihi << 16) | (curr_pkt.lba_hi) << 24;
     lseek(disk_fd, lba * CD_BLOCK_SZ, SEEK_SET);
-    read(disk_fd, to_send, CD_BLOCK_SZ);
+    int i = read(disk_fd, to_send, CD_BLOCK_SZ);
+    (void)i;
     byte_sent = 0;
 }
 

@@ -1,6 +1,9 @@
 CC?=gcc
 CFLAGS+=-Wall -Wextra -pedantic -I../../include/
-LFLAGS=-lasan -lpthread -L../../build/ -lblackhv
+
+SDL_LDFLAGS=`sdl2-config --libs`
+
+LFLAGS=-lasan -lpthread -L../../build/ -lblackhv $(SDL_LDFLAGS)
 
 BUILD_DIR=build
 
