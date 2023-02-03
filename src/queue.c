@@ -16,7 +16,7 @@ queue_t *queue_new(size_t buffer_size)
     if (queue->buffer == NULL)
     {
         free(queue);
-        return queue;
+        return NULL;
     }
 
     queue->buffer_size = buffer_size;
