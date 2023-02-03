@@ -1,5 +1,6 @@
 #include <blackhv/memory.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -115,8 +116,17 @@ static s32 check_addr_available(vm_t *vm, u64 phys_addr, u64 size)
 
 s32 memory_alloc(vm_t *vm, u64 phys_addr, u64 size, u32 type)
 {
-    if (vm == NULL || check_addr_available(vm, phys_addr, size) == 0)
+    if (vm == NULL)
     {
+        return 0;
+    }
+
+    if (check_addr_available(vm, phys_addr, size) == 0)
+    {
+        fprintf(stderr,
+                "Address not available at %llx for %lld bytes\n",
+                phys_addr,
+                size);
         return 0;
     }
 
@@ -197,7 +207,7 @@ void *memory_get_ptr(vm_t *vm, u64 addr)
 
     u64 ptr = (u64)entry->memory_ptr;
 
-    return (void*) (ptr + (addr - entry->guest_phys));
+    return (void *)(ptr + (addr - entry->guest_phys));
 }
 
 struct e820_table *e820_table_get(vm_t *vm)

@@ -710,8 +710,8 @@ unsigned char splash[SPLASH_WIDTH * SPLASH_HEIGHT] = {
     0x0,  0x0,  0x0,
 };
 
-#define GRAPHIC_WIDTH 640
-#define GRAPHIC_HEIGHT 400
+#define GRAPHIC_WIDTH 320
+#define GRAPHIC_HEIGHT 200
 
 #define STACK_SIZE 16384
 
@@ -803,7 +803,7 @@ __attribute__((naked, section(".boot"))) void _start(void)
     *ptr = 'A';
 
     unsigned char *framebuffer = (unsigned char *)0xC2000000;
-    for (int i = 0; i < 640 * 400 * 4; i += 4)
+    for (int i = 0; i < 320 * 200 * 4; i += 4)
     {
         // White background
         framebuffer[i] = 0;

@@ -147,6 +147,38 @@ static void load_linux(vm_t *vm, char *image, size_t image_size)
     }
 }
 
+static void *load_file(const char *path, size_t *size)
+{
+    int fd = open(path, O_RDONLY);
+
+    if (fd < 0)
+    {
+        return NULL;
+    }
+
+    struct stat stat;
+
+    if (fstat(fd, &stat) < 0)
+    {
+        close(fd);
+        return NULL;
+    }
+
+    char *map =
+        mmap(0x0, stat.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+    close(fd);
+
+    if (map == MAP_FAILED)
+    {
+        close(fd);
+        return NULL;
+    }
+
+    *size = stat.st_size;
+    return map;
+}
+
 static void *serial_thread(void *param)
 {
     printf("Thread started\n");
@@ -177,31 +209,10 @@ int main(int argc, char *argv[])
         errx(1, "Failed to allocate memory");
     }
 
-    int fd = open(argv[1], O_RDONLY);
+    size_t image_size = 0;
+    char *image = load_file(argv[1], &image_size);
 
-    if (fd < 0)
-    {
-        errx(1, "Failed to open %s", argv[1]);
-    }
-
-    struct stat stat;
-
-    if (fstat(fd, &stat) < 0)
-    {
-        errx(1, "Failed to fstat");
-    }
-
-    char *map =
-        mmap(0x0, stat.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-
-    close(fd);
-
-    if (map == MAP_FAILED)
-    {
-        errx(1, "mmap failed");
-    }
-
-    load_linux(vm, map, stat.st_size);
+    load_linux(vm, image, image_size);
 
     serial_t *serial = serial_new(COM1, 1024);
 
