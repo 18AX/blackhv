@@ -803,7 +803,7 @@ __attribute__((naked, section(".boot"))) void _start(void)
     *ptr = 'A';
 
     unsigned char *framebuffer = (unsigned char *)0xC2000000;
-    for (int i = 0; i < 640 * 400 * 4; i += 4)
+    for (int i = 0; i < 320 * 200 * 4; i += 4)
     {
         // White background
         framebuffer[i] = 0;
