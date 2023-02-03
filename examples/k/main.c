@@ -18,10 +18,9 @@
 #include "multiboot.h"
 
 #define MULTIBOOT_GUEST 0xc10000
-#define CMDLINE "/bin/hunter"
 #define CMDLINE_GUEST 0xc20000
 #define MEMORY_GUEST 0xc30000
-#define FRAMEBUFFER_GUEST 0xC2000000
+#define FRAMEBUFFER_GUEST 0xc2000000
 
 static vm_t *init_vm()
 {
@@ -76,7 +75,7 @@ static void setup_e820(vm_t *vm, multiboot_info_t *info)
     e820_table_free(table);
 }
 
-static void load_k(vm_t *vm, char *image, size_t image_size)
+static void load_k(vm_t *vm, char *image, char *cmdline)
 {
     multiboot_info_t *multiboot =
         (multiboot_info_t *)memory_get_ptr(vm, MULTIBOOT_GUEST);
@@ -88,13 +87,13 @@ static void load_k(vm_t *vm, char *image, size_t image_size)
     memset(multiboot, 0, sizeof(multiboot_info_t));
     setup_e820(vm, multiboot);
 
-    char *cmdline = (char *)memory_get_ptr(vm, CMDLINE_GUEST);
-    if (cmdline == NULL)
+    char *guest_cmdline = (char *)memory_get_ptr(vm, CMDLINE_GUEST);
+    if (guest_cmdline == NULL)
     {
         errx(1, "Could not get cmdline guest pointer");
     }
 
-    strcpy(cmdline, CMDLINE);
+    strcpy(guest_cmdline, cmdline);
     multiboot->cmdline = (multiboot_uint32_t)CMDLINE_GUEST;
 
     Elf32_Ehdr *header = (Elf32_Ehdr *)image;
@@ -182,9 +181,9 @@ static void *serial_thread(void *param)
 
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc != 4)
     {
-        errx(1, "Usage: ./k_example /path/to/k.elf disk.iso");
+        errx(1, "Usage: ./k_example /path/to/k.elf disk.iso cmdline");
     }
 
     vm_t *vm = init_vm();
@@ -197,7 +196,7 @@ int main(int argc, char **argv)
     size_t image_size = 0;
     char *image = load_file(argv[1], &image_size);
 
-    load_k(vm, image, image_size);
+    load_k(vm, image, argv[3]);
 
     serial_t *serial = serial_new(COM1, 1024);
 
